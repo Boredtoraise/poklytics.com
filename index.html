@@ -115,6 +115,49 @@
   .badge--purple{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.15);}
   .badge--cyan{background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.15);}
 
+  /* ── Mini Mockups ── */
+  .tool__mock{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-family:'DM Mono',monospace;font-size:.72rem;overflow:hidden;}
+
+  /* Leak Report mock */
+  .mock-leak{display:flex;align-items:center;gap:14px;}
+  .mock-leak__ring{width:48px;height:48px;border-radius:50%;border:3px solid var(--border);position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .mock-leak__ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:3px solid;border-color:var(--warn) var(--warn) transparent transparent;transform:rotate(-10deg);}
+  .mock-leak__score{font-size:1.1rem;font-weight:600;color:var(--warn);}
+  .mock-leak__stats{display:flex;flex-direction:column;gap:4px;flex:1;}
+  .mock-leak__row{display:flex;justify-content:space-between;align-items:center;}
+  .mock-leak__label{color:var(--dim);font-size:.6rem;}
+  .mock-leak__val{font-weight:500;}
+  .mock-leak__bar{flex:1;height:4px;background:var(--border);border-radius:2px;margin:0 8px;}
+  .mock-leak__bar-fill{height:100%;border-radius:2px;}
+
+  /* Tournament mock */
+  .mock-tourney{display:flex;align-items:flex-end;gap:3px;height:40px;padding-top:4px;}
+  .mock-tourney__bar{flex:1;border-radius:2px 2px 0 0;min-height:4px;}
+  .mock-tourney__bar--up{background:var(--blue);}
+  .mock-tourney__bar--down{background:var(--bad);opacity:.6;}
+  .mock-tourney__kpi{display:flex;justify-content:space-between;margin-top:8px;font-size:.6rem;color:var(--dim);}
+  .mock-tourney__kpi strong{color:var(--blue);}
+
+  /* HandIQ mock */
+  .mock-hand{display:flex;align-items:center;gap:12px;}
+  .mock-hand__cards{display:flex;gap:3px;flex-shrink:0;}
+  .mock-hand__card{width:24px;height:33px;border-radius:3px;border:1px solid rgba(255,255,255,.1);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:500;color:#fff;}
+  .mock-hand__analysis{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .mock-hand__row{display:flex;align-items:center;gap:6px;font-size:.6rem;}
+  .mock-hand__action{width:36px;color:var(--dim);}
+  .mock-hand__ev-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .mock-hand__ev-fill{height:100%;border-radius:2px;}
+  .mock-hand__ev{width:44px;text-align:right;font-size:.6rem;}
+
+  /* Daily Spot mock */
+  .mock-spot{text-align:center;}
+  .mock-spot__q{font-size:.65rem;color:var(--text2);margin-bottom:8px;}
+  .mock-spot__q strong{color:#fff;}
+  .mock-spot__actions{display:flex;gap:4px;margin-bottom:8px;}
+  .mock-spot__btn{flex:1;padding:5px 0;border-radius:5px;font-size:.6rem;font-weight:600;border:1px solid var(--border);color:var(--dim);text-align:center;}
+  .mock-spot__btn--selected{border-color:rgba(34,211,238,.3);color:#22d3ee;background:rgba(34,211,238,.06);}
+  .mock-spot__streak{font-size:.6rem;color:#22d3ee;font-weight:600;}
+
   .tool__name{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:8px;letter-spacing:-.02em;}
   .tool__desc{font-size:.84rem;color:var(--text2);line-height:1.65;margin-bottom:18px;}
   .tool__price{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--dim);margin-bottom:16px;}
@@ -308,6 +351,16 @@
     <div class="tools">
       <div class="tool tool--orange">
         <div class="tool__badge badge--orange">Live Now</div>
+        <div class="tool__mock">
+          <div class="mock-leak">
+            <div class="mock-leak__ring"><span class="mock-leak__score">68</span></div>
+            <div class="mock-leak__stats">
+              <div class="mock-leak__row"><span class="mock-leak__label">VPIP</span><div class="mock-leak__bar"><div class="mock-leak__bar-fill" style="width:28%;background:var(--ok)"></div></div><span class="mock-leak__val" style="color:var(--ok)">28%</span></div>
+              <div class="mock-leak__row"><span class="mock-leak__label">F/3B</span><div class="mock-leak__bar"><div class="mock-leak__bar-fill" style="width:72%;background:var(--bad)"></div></div><span class="mock-leak__val" style="color:var(--bad)">72%</span></div>
+              <div class="mock-leak__row"><span class="mock-leak__label">CB-T</span><div class="mock-leak__bar"><div class="mock-leak__bar-fill" style="width:68%;background:var(--bad)"></div></div><span class="mock-leak__val" style="color:var(--bad)">68%</span></div>
+            </div>
+          </div>
+        </div>
         <div class="tool__name">Leak Report</div>
         <div class="tool__desc">Upload your hand history. Get a full stat breakdown with gauge bars vs GTO, leak detection with severity scoring, and AI coaching tips.</div>
         <div class="tool__price">First report free &bull; $4.99 per report</div>
@@ -315,6 +368,23 @@
       </div>
       <div class="tool tool--blue">
         <div class="tool__badge badge--blue">Coming Q2</div>
+        <div class="tool__mock">
+          <div class="mock-tourney">
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:22%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--down" style="height:12%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:48%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:65%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--down" style="height:28%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:38%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:78%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:55%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--down" style="height:15%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:92%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:60%"></div>
+            <div class="mock-tourney__bar mock-tourney__bar--up" style="height:72%"></div>
+          </div>
+          <div class="mock-tourney__kpi"><span>2,847 tournaments</span><span><strong>+$8,420</strong> profit</span><span>ROI <strong>12.5%</strong></span></div>
+        </div>
         <div class="tool__name">Tournament Report</div>
         <div class="tool__desc">Analyze your tournament results &mdash; ROI by stake, format breakdown, profit heatmap, bubble rate, and session timing insights.</div>
         <div class="tool__price">$4.99 per report</div>
@@ -322,6 +392,19 @@
       </div>
       <div class="tool tool--purple">
         <div class="tool__badge badge--purple">Coming Q3</div>
+        <div class="tool__mock">
+          <div class="mock-hand">
+            <div class="mock-hand__cards">
+              <div class="mock-hand__card">A<span style="color:#f87171">&hearts;</span></div>
+              <div class="mock-hand__card">K&spades;</div>
+            </div>
+            <div class="mock-hand__analysis">
+              <div class="mock-hand__row"><span class="mock-hand__action" style="color:var(--purple)">4-Bet</span><div class="mock-hand__ev-bar"><div class="mock-hand__ev-fill" style="width:100%;background:var(--purple)"></div></div><span class="mock-hand__ev" style="color:var(--purple)">+2.3bb &#10003;</span></div>
+              <div class="mock-hand__row"><span class="mock-hand__action">Call</span><div class="mock-hand__ev-bar"><div class="mock-hand__ev-fill" style="width:35%;background:var(--ok)"></div></div><span class="mock-hand__ev" style="color:var(--ok)">+0.8bb</span></div>
+              <div class="mock-hand__row"><span class="mock-hand__action">Fold</span><div class="mock-hand__ev-bar"><div class="mock-hand__ev-fill" style="width:0%"></div></div><span class="mock-hand__ev" style="color:var(--dim)">0bb</span></div>
+            </div>
+          </div>
+        </div>
         <div class="tool__name">HandIQ</div>
         <div class="tool__desc">Deep hand-by-hand analysis. Spot your most costly mistakes, find patterns across thousands of hands, and get personalized study plans.</div>
         <div class="tool__price">$19.99/month</div>
@@ -329,6 +412,18 @@
       </div>
       <div class="tool tool--cyan">
         <div class="tool__badge badge--cyan">Coming Q3</div>
+        <div class="tool__mock">
+          <div class="mock-spot">
+            <div class="mock-spot__q"><strong>J&hearts;9&hearts;</strong> on BTN &mdash; CO raises 2.5x</div>
+            <div class="mock-spot__actions">
+              <div class="mock-spot__btn">Fold</div>
+              <div class="mock-spot__btn mock-spot__btn--selected">Call</div>
+              <div class="mock-spot__btn">3-Bet</div>
+              <div class="mock-spot__btn">3-Bet Lg</div>
+            </div>
+            <div class="mock-spot__streak">&#128293; 12 day streak</div>
+          </div>
+        </div>
         <div class="tool__name">Daily Spot</div>
         <div class="tool__desc">One poker spot per day. Analyze it, compare your answer to GTO, and track your study streak. Like Wordle for poker.</div>
         <div class="tool__price">Free &bull; $4.99/mo pro</div>
