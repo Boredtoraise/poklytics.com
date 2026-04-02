@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sample Leak Report — Poklytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ══════════════════════════════════════════════
+     COLORBLIND-SAFE DESIGN SYSTEM
+     NO red or green for status — blue/orange only
+     ══════════════════════════════════════════════ */
+  :root {
+    --bg: #0b0d14;
+    --bg2: #10121a;
+    --card: #141620;
+    --card-elevated: #181b2a;
+    --border: #1e2035;
+    --border-light: #272a42;
+    --text: #e4e4ec;
+    --text2: #9ca3b8;
+    --dim: #555a70;
+    --accent: #c8f135;
+    --blue: #3b82f6;
+    --ok: #4db8ff;
+    --warn: #f59e0b;
+    --bad: #ff9500;
+    --purple: #a78bfa;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .report { max-width: 920px; margin: 0 auto; padding: 40px 28px 72px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes ringDraw { from { stroke-dasharray: 0 377; } }
+
+  .anim { opacity: 0; animation: fadeUp 0.5s ease-out forwards; }
+  .anim-d1 { animation-delay: 0.05s; }
+  .anim-d2 { animation-delay: 0.15s; }
+  .anim-d3 { animation-delay: 0.25s; }
+  .anim-d4 { animation-delay: 0.35s; }
+  .anim-d5 { animation-delay: 0.45s; }
+  .anim-d6 { animation-delay: 0.55s; }
+  .anim-d7 { animation-delay: 0.65s; }
+  .anim-d8 { animation-delay: 0.75s; }
+
+  /* ── Header ── */
+  .report-header { text-align: center; padding: 40px 0 32px; margin-bottom: 32px; position: relative; }
+  .report-header::after { content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--border-light), transparent); }
+  .report-header__badge { display: inline-block; font-size: 0.58rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #0b0d14; background: var(--accent); padding: 5px 18px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(200,241,53,0.2); }
+  .report-header h1 { font-size: 2.1rem; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.02em; }
+  .report-header__sub { font-size: 0.8rem; color: var(--dim); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .report-header__sub .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--dim); }
+
+  /* ── Sample Banner ── */
+  .sample-banner { text-align: center; padding: 12px; background: rgba(200,241,53,0.06); border: 1px solid rgba(200,241,53,0.15); border-radius: 10px; margin-bottom: 28px; font-size: 0.78rem; color: var(--accent); font-weight: 600; letter-spacing: 0.5px; }
+  .sample-banner a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── Sections ── */
+  .sect { margin-bottom: 32px; }
+  .sect__title { font-size: 0.68rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px; padding-bottom: 10px; position: relative; }
+  .sect__title::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--border-light), transparent); }
+
+  /* ── Cards ── */
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Score Ring ── */
+  .score-ring { text-align: center; padding: 12px 0; }
+  .ring-wrap { position: relative; display: inline-block; width: 140px; height: 140px; }
+  .ring-svg { width: 140px; height: 140px; transform: rotate(-90deg); filter: drop-shadow(0 0 10px rgba(200,241,53,0.12)); }
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+  .ring-track { fill: none; stroke: rgba(200,241,53,0.04); stroke-width: 5; }
+  .ring-progress { fill: none; stroke-width: 5; stroke-linecap: round; animation: ringDraw 1.2s ease-out forwards; filter: drop-shadow(0 0 6px currentColor); }
+  .ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .ring__num { font-family: 'DM Mono', monospace; font-size: 2.6rem; font-weight: 500; line-height: 1; letter-spacing: -0.02em; }
+  .ring__label { font-size: 0.55rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+  .ring__grade { font-size: 0.82rem; color: var(--text2); margin-top: 12px; }
+  .ring__grade strong { font-size: 1rem; }
+
+  /* ── Quick Summary ── */
+  .summary-header { font-size: 0.65rem; color: var(--dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 18px; font-weight: 700; }
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(30,32,53,0.6); }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-label { font-size: 0.82rem; color: var(--text2); }
+  .summary-value { font-family: 'DM Mono', monospace; font-size: 0.88rem; font-weight: 500; }
+  .val-bad { color: var(--bad); }
+  .val-ok { color: var(--ok); }
+  .val-warn { color: var(--warn); }
+
+  /* ── EVbb Grid ── */
+  .evbb-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .evbb-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 10px; text-align: center; position: relative; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+  .evbb-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background 0.2s; }
+  .evbb-card:hover { border-color: var(--border-light); transform: translateY(-1px); }
+  .evbb-pos { font-size: 0.58rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+  .evbb-val { font-family: 'DM Mono', monospace; font-size: 1.35rem; font-weight: 500; line-height: 1.2; }
+  .evbb-unit { font-family: 'DM Mono', monospace; font-size: 0.55rem; color: var(--dim); margin-top: 3px; }
+  .evbb-positive { color: var(--ok); }
+  .evbb-negative { color: var(--bad); }
+
+  /* ── Gauge Bars ── */
+  .gauge-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid rgba(30,32,53,0.5); transition: background 0.15s; }
+  .gauge-row:last-child { border-bottom: none; }
+  .gauge-row:hover { background: rgba(24,27,42,0.5); margin: 0 -12px; padding-left: 12px; padding-right: 12px; border-radius: 6px; }
+  .gauge-name { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text2); width: 110px; flex-shrink: 0; }
+  .gauge-bar-wrap { flex: 1; height: 24px; background: var(--bg2); border-radius: 6px; position: relative; overflow: visible; }
+  .gauge-bar { height: 100%; border-radius: 6px; position: relative; z-index: 1; transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+  .gauge-bar.ok { background: linear-gradient(90deg, rgba(77,184,255,0.2), var(--ok)); }
+  .gauge-bar.warn { background: linear-gradient(90deg, rgba(245,158,11,0.2), var(--warn)); }
+  .gauge-bar.bad { background: linear-gradient(90deg, rgba(255,149,0,0.2), var(--bad)); }
+  .gauge-optimal { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--accent); border-radius: 2px; z-index: 3; box-shadow: 0 0 10px rgba(200,241,53,0.35); }
+  .gauge-optimal::before { content: ''; position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 6px rgba(200,241,53,0.5); }
+  .gauge-optimal::after { content: 'GTO'; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-family: 'DM Mono', monospace; font-size: 0.42rem; font-weight: 700; color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
+  .gauge-val { font-family: 'DM Mono', monospace; font-size: 0.82rem; font-weight: 500; width: 52px; text-align: right; flex-shrink: 0; }
+  .gauge-status { width: 24px; flex-shrink: 0; text-align: center; font-size: 0.82rem; }
+
+  /* ── Leak Cards ── */
+  .leak-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; margin-bottom: 12px; border-left: 4px solid; position: relative; transition: border-color 0.2s, transform 0.15s; }
+  .leak-card:hover { transform: translateX(2px); }
+  .leak-card.critical { border-left-color: var(--bad); }
+  .leak-card.warning { border-left-color: var(--warn); }
+  .leak-card.strong { border-left-color: var(--ok); }
+  .leak-card__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .leak-card__title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+  .leak-card__severity { font-size: 0.55rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; margin-left: 12px; }
+  .sev-critical { background: rgba(255,149,0,0.12); color: var(--bad); border: 1px solid rgba(255,149,0,0.2); }
+  .sev-warning { background: rgba(245,158,11,0.12); color: var(--warn); border: 1px solid rgba(245,158,11,0.2); }
+  .sev-strong { background: rgba(77,184,255,0.12); color: var(--ok); border: 1px solid rgba(77,184,255,0.2); }
+  .leak-card__stat { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text2); margin-bottom: 12px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .leak-card__stat-item { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; background: var(--bg2); border-radius: 6px; border: 1px solid rgba(30,32,53,0.6); }
+  .leak-card__stat-label { color: var(--dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .leak-card__desc { font-size: 0.82rem; color: var(--text2); line-height: 1.7; }
+  .leak-card__desc strong { color: #fff; }
+  .leak-card__fix { margin-top: 14px; padding: 14px 18px; background: var(--bg2); border-radius: 10px; font-size: 0.8rem; color: var(--text2); line-height: 1.7; border: 1px solid rgba(30,32,53,0.5); }
+  .leak-card__fix-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 0.58rem; font-weight: 700; color: var(--ok); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .leak-card__fix-tag::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--ok); border-radius: 50%; }
+
+  /* ── Position Table ── */
+  .pos-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; }
+  .pos-table th { text-align: center; padding: 10px 6px; color: var(--dim); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid var(--border); background: var(--card); }
+  .pos-table td { text-align: center; padding: 11px 6px; border-bottom: 1px solid rgba(30,32,53,0.5); font-family: 'DM Mono', monospace; font-size: 0.78rem; transition: background 0.1s; }
+  .pos-table tbody tr { transition: background 0.1s; }
+  .pos-table tbody tr:hover { background: rgba(24,27,42,0.6); }
+  .pos-table tbody tr:last-child td { border-bottom: none; }
+  .pos-name { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 700; color: #fff; font-size: 0.8rem !important; }
+  .pos-ok { color: var(--ok); }
+  .pos-warn { color: var(--warn); }
+  .pos-bad { color: var(--bad); }
+
+  /* ── AI Insight ── */
+  .insight { background: linear-gradient(135deg, rgba(200,241,53,0.03) 0%, rgba(167,139,250,0.03) 100%); border: 1px solid rgba(200,241,53,0.12); border-radius: 14px; padding: 28px; position: relative; overflow: hidden; }
+  .insight::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), var(--purple), transparent); opacity: 0.4; }
+  .insight__tag { display: inline-flex; align-items: center; gap: 7px; font-size: 0.58rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 20px; padding: 4px 14px; background: rgba(200,241,53,0.06); border-radius: 20px; border: 1px solid rgba(200,241,53,0.12); }
+  .insight__tag::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px rgba(200,241,53,0.5); }
+  .insight__priority { margin-bottom: 18px; padding: 16px 18px; background: rgba(11,13,20,0.4); border-radius: 10px; border: 1px solid rgba(30,32,53,0.4); }
+  .insight__priority:last-of-type { margin-bottom: 0; }
+  .insight__priority-num { font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500; color: var(--accent); margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; background: rgba(200,241,53,0.06); border-radius: 12px; }
+  .insight__priority-title { font-size: 0.92rem; font-weight: 700; color: #fff; margin-top: 8px; margin-bottom: 6px; }
+  .insight__priority-text { font-size: 0.82rem; color: var(--text2); line-height: 1.7; }
+  .insight__total { font-size: 0.92rem; font-weight: 700; color: var(--accent); margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(200,241,53,0.1); display: flex; align-items: center; gap: 8px; }
+  .insight__total::before { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 2px; transform: rotate(45deg); }
+
+  /* ── CTA Banner ── */
+  .cta-banner { text-align: center; padding: 40px 28px; background: linear-gradient(135deg, rgba(200,241,53,0.04), rgba(167,139,250,0.04)); border: 1px solid rgba(200,241,53,0.15); border-radius: 16px; margin-top: 32px; }
+  .cta-banner h2 { font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .cta-banner p { font-size: 0.88rem; color: var(--text2); margin-bottom: 20px; }
+  .cta-banner__btn { display: inline-block; padding: 14px 36px; font-family: inherit; font-size: 0.95rem; font-weight: 700; background: var(--accent); color: #0b0d14; border-radius: 10px; text-decoration: none; transition: 0.2s; box-shadow: 0 4px 20px rgba(200,241,53,0.2); }
+  .cta-banner__btn:hover { box-shadow: 0 4px 28px rgba(200,241,53,0.35); transform: translateY(-1px); }
+
+  /* ── Footer ── */
+  .footer { text-align: center; padding-top: 32px; margin-top: 40px; position: relative; }
+  .footer::before { content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+  .footer__brand { font-size: 0.65rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+  .footer__disclaimer { font-size: 0.68rem; color: #3d4258; max-width: 480px; margin: 0 auto; line-height: 1.7; }
+
+  @media (max-width: 640px) {
+    .report { padding: 28px 16px 48px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .evbb-grid { grid-template-columns: repeat(3, 1fr); }
+    .gauge-name { width: 80px; font-size: 0.7rem; }
+    .gauge-row:hover { margin: 0; padding-left: 0; padding-right: 0; }
+    .pos-table { font-size: 0.68rem; }
+    .pos-table th, .pos-table td { padding: 8px 4px; }
+    .report-header h1 { font-size: 1.6rem; }
+    .leak-card { padding: 18px 16px; }
+    .insight { padding: 20px 16px; }
+  }
+
+  @media print {
+    html, body { background: #0b0d14 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body::before { display: none; }
+    .anim { opacity: 1 !important; animation: none !important; }
+    .sample-banner, .cta-banner { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="report">
+
+  <!-- Sample Banner -->
+  <div class="sample-banner anim anim-d1">
+    This is a sample report. <a href="index.html">Upload your hand history</a> to get your own.
+  </div>
+
+  <!-- 1. Header -->
+  <div class="report-header anim anim-d1">
+    <div class="report-header__badge">Full Leak Report</div>
+    <h1>PokerHero_TH</h1>
+    <div class="report-header__sub">
+      <span>32,400 hands analyzed</span>
+      <span class="sep"></span>
+      <span>GGPoker NL50</span>
+      <span class="sep"></span>
+      <span>April 2026</span>
+    </div>
+  </div>
+
+  <!-- 2. Health Score + Quick Summary -->
+  <div class="grid2 anim anim-d2" style="margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="score-ring">
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 140 140">
+            <circle class="ring-track" cx="70" cy="70" r="60" />
+            <circle class="ring-bg" cx="70" cy="70" r="60" />
+            <circle class="ring-progress" cx="70" cy="70" r="60"
+                    stroke="#f59e0b"
+                    stroke-dasharray="256 377"
+                    stroke-dashoffset="0" />
+          </svg>
+          <div class="ring-center">
+            <div class="ring__num" style="color:#f59e0b">68</div>
+            <div class="ring__label">Health Score</div>
+          </div>
+        </div>
+        <div class="ring__grade">Grade: <strong style="color:#f59e0b">B-</strong> &mdash; Room for improvement</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="summary-header">Quick Summary</div>
+      <div class="summary-row">
+        <span class="summary-label">Leaks Found</span>
+        <span class="summary-value val-bad">4 issues</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Est. Leak Impact</span>
+        <span class="summary-value val-warn">~4.2 BB/100</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Strengths</span>
+        <span class="summary-value val-ok">3 areas</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label">Potential Gain</span>
+        <span class="summary-value val-ok">+4.2 BB/100</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2.5. EVbb/100 by Position -->
+  <div class="sect anim anim-d2">
+    <div class="sect__title">EVbb/100 by Position</div>
+    <div class="evbb-grid">
+      <div class="evbb-card">
+        <div class="evbb-pos">SB</div>
+        <div class="evbb-val evbb-negative">-14.2</div>
+        <div class="evbb-unit">bb/100</div>
+      </div>
+      <div class="evbb-card">
+        <div class="evbb-pos">BB</div>
+        <div class="evbb-val evbb-negative">-22.8</div>
+        <div class="evbb-unit">bb/100</div>
+      </div>
+      <div class="evbb-card">
+        <div class="evbb-pos">EP</div>
+        <div class="evbb-val evbb-positive">+8.2</div>
+        <div class="evbb-unit">bb/100</div>
+      </div>
+      <div class="evbb-card">
+        <div class="evbb-pos">MP</div>
+        <div class="evbb-val evbb-positive">+5.4</div>
+        <div class="evbb-unit">bb/100</div>
+      </div>
+      <div class="evbb-card">
+        <div class="evbb-pos">CO</div>
+        <div class="evbb-val evbb-positive">+12.1</div>
+        <div class="evbb-unit">bb/100</div>
+      </div>
+      <div class="evbb-card">
+        <div class="evbb-pos">BTN</div>
+        <div class="evbb-val evbb-positive">+18.5</div>
+        <div class="evbb-unit">bb/100</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Stats Overview -->
+  <div class="sect anim anim-d3">
+    <div class="sect__title">Stats Overview &mdash; vs GTO Optimal</div>
+    <div class="chart-card">
+      <div class="gauge-row">
+        <div class="gauge-name">VPIP</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar ok" style="width:28%"></div>
+          <div class="gauge-optimal" style="left:26%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--ok)">28%</div>
+        <div class="gauge-status">&#9679;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">PFR</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar ok" style="width:21%"></div>
+          <div class="gauge-optimal" style="left:22%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--ok)">21%</div>
+        <div class="gauge-status">&#9679;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">3Bet</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar warn" style="width:5.1%"></div>
+          <div class="gauge-optimal" style="left:9%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--warn)">5.1%</div>
+        <div class="gauge-status">&#9650;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">Fold to 3Bet</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar bad" style="width:72%"></div>
+          <div class="gauge-optimal" style="left:55%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--bad)">72%</div>
+        <div class="gauge-status">&#9888;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">WTSD</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar ok" style="width:27%"></div>
+          <div class="gauge-optimal" style="left:28%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--ok)">27%</div>
+        <div class="gauge-status">&#9679;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">W$SD</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar ok" style="width:52%"></div>
+          <div class="gauge-optimal" style="left:50%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--ok)">52%</div>
+        <div class="gauge-status">&#9679;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">C-Bet Flop</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar warn" style="width:75%"></div>
+          <div class="gauge-optimal" style="left:55%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--warn)">75%</div>
+        <div class="gauge-status">&#9650;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">C-Bet Turn</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar bad" style="width:68%"></div>
+          <div class="gauge-optimal" style="left:45%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--bad)">68%</div>
+        <div class="gauge-status">&#9888;</div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-name">Agg. Factor</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar ok" style="width:35%"></div>
+          <div class="gauge-optimal" style="left:30%"></div>
+        </div>
+        <div class="gauge-val" style="color:var(--ok)">2.8</div>
+        <div class="gauge-status">&#9679;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Leaks Detected -->
+  <div class="sect anim anim-d4">
+    <div class="sect__title">Leaks Detected</div>
+
+    <div class="leak-card critical">
+      <div class="leak-card__header">
+        <div class="leak-card__title">Fold to 3-Bet Too High</div>
+        <div class="leak-card__severity sev-critical">Critical</div>
+      </div>
+      <div class="leak-card__stat">
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">You</span> 72%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">GTO</span> 50-58%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">Dev</span> +14%</span>
+      </div>
+      <div class="leak-card__desc">You're folding <strong>72% of the time</strong> when facing a 3-bet. Opponents can exploit this by 3-betting any two cards and printing money. Estimated cost: <strong>~$180/month</strong>.</div>
+      <div class="leak-card__fix">
+        <div class="leak-card__fix-tag">How to Fix</div>
+        Widen your 4-bet bluff range from BTN and CO. Add <strong>A5s, A4s, KQo, suited connectors (76s-T9s)</strong> to your 4-bet/call range. Practice with preflop charts for 15 min before each session.
+      </div>
+    </div>
+
+    <div class="leak-card critical">
+      <div class="leak-card__header">
+        <div class="leak-card__title">C-Bet Turn Too Aggressive</div>
+        <div class="leak-card__severity sev-critical">Critical</div>
+      </div>
+      <div class="leak-card__stat">
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">You</span> 68%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">GTO</span> 40-48%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">Dev</span> +20%</span>
+      </div>
+      <div class="leak-card__desc">You're firing the turn <strong>68% of the time</strong> &mdash; way too often. You're burning chips with air on turns that don't improve your range. Estimated cost: <strong>~$110/month</strong>.</div>
+      <div class="leak-card__fix">
+        <div class="leak-card__fix-tag">How to Fix</div>
+        Give up more on turn when: (1) villain calls flop c-bet on wet board, (2) turn card completes draws, (3) you have no equity. Only barrel turn with <strong>strong hands, nut draws, and blockers</strong>.
+      </div>
+    </div>
+
+    <div class="leak-card warning">
+      <div class="leak-card__header">
+        <div class="leak-card__title">3-Bet Frequency Too Low</div>
+        <div class="leak-card__severity sev-warning">Warning</div>
+      </div>
+      <div class="leak-card__stat">
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">You</span> 5.1%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">GTO</span> 8-10%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">Dev</span> -4%</span>
+      </div>
+      <div class="leak-card__desc">Your 3-bet is only <strong>5.1%</strong> &mdash; you're playing too passively preflop. You're missing value with premium hands and letting opponents see cheap flops.</div>
+      <div class="leak-card__fix">
+        <div class="leak-card__fix-tag">How to Fix</div>
+        Add more 3-bets from <strong>BTN vs CO, SB vs BTN</strong>. Include hands like <strong>ATs+, KJs+, QJs, 99+, suited connectors</strong> in your 3-bet range.
+      </div>
+    </div>
+
+    <div class="leak-card warning">
+      <div class="leak-card__header">
+        <div class="leak-card__title">C-Bet Flop Slightly High</div>
+        <div class="leak-card__severity sev-warning">Warning</div>
+      </div>
+      <div class="leak-card__stat">
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">You</span> 75%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">GTO</span> 50-60%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">Dev</span> +15%</span>
+      </div>
+      <div class="leak-card__desc">Your flop c-bet of <strong>75%</strong> is above optimal. You're c-betting boards that don't favor your range, especially OOP.</div>
+      <div class="leak-card__fix">
+        <div class="leak-card__fix-tag">How to Fix</div>
+        Check more on <strong>wet, low-card boards (6-7-8, 5-6-9)</strong> when OOP. Focus c-bets on <strong>dry A/K-high boards</strong> where your range advantage is clear.
+      </div>
+    </div>
+
+    <div class="leak-card strong">
+      <div class="leak-card__header">
+        <div class="leak-card__title">Showdown Stats</div>
+        <div class="leak-card__severity sev-strong">Strong</div>
+      </div>
+      <div class="leak-card__stat">
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">WTSD</span> 27%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">W$SD</span> 52%</span>
+        <span class="leak-card__stat-item"><span class="leak-card__stat-label">Status</span> Near optimal</span>
+      </div>
+      <div class="leak-card__desc">Your showdown stats are solid. You're picking the <strong>right spots to go to showdown</strong> and winning at a good rate. Keep this up.</div>
+    </div>
+  </div>
+
+  <!-- 5. Position Breakdown -->
+  <div class="sect anim anim-d5">
+    <div class="sect__title">Position Breakdown</div>
+    <div class="chart-card" style="padding:16px;overflow-x:auto;">
+      <table class="pos-table">
+        <thead>
+        <tr>
+          <th>Position</th>
+          <th>Hands</th>
+          <th>RFI</th>
+          <th>3Bet</th>
+          <th>CB Flop</th>
+          <th>Flop AFq</th>
+          <th>Turn AFq</th>
+          <th>EVbb/100</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="pos-name">SB</td>
+          <td>5,200</td>
+          <td class="pos-ok">32%</td>
+          <td class="pos-ok">8.1%</td>
+          <td class="pos-warn">70%</td>
+          <td class="pos-warn">48%</td>
+          <td class="pos-bad">66%</td>
+          <td class="pos-bad">-14.2</td>
+        </tr>
+        <tr>
+          <td class="pos-name">BB</td>
+          <td>5,400</td>
+          <td class="pos-ok">12%</td>
+          <td class="pos-ok">9.5%</td>
+          <td class="pos-warn">62%</td>
+          <td class="pos-warn">42%</td>
+          <td class="pos-warn">55%</td>
+          <td class="pos-bad">-22.8</td>
+        </tr>
+        <tr>
+          <td class="pos-name">EP</td>
+          <td>5,100</td>
+          <td class="pos-ok">15%</td>
+          <td class="pos-ok">4.2%</td>
+          <td class="pos-warn">72%</td>
+          <td class="pos-warn">52%</td>
+          <td class="pos-bad">70%</td>
+          <td class="pos-ok">+8.2</td>
+        </tr>
+        <tr>
+          <td class="pos-name">MP</td>
+          <td>5,300</td>
+          <td class="pos-ok">18%</td>
+          <td class="pos-warn">4.8%</td>
+          <td class="pos-warn">74%</td>
+          <td class="pos-warn">50%</td>
+          <td class="pos-bad">65%</td>
+          <td class="pos-ok">+5.4</td>
+        </tr>
+        <tr>
+          <td class="pos-name">CO</td>
+          <td>5,500</td>
+          <td class="pos-ok">26%</td>
+          <td class="pos-warn">5.5%</td>
+          <td class="pos-warn">78%</td>
+          <td class="pos-warn">55%</td>
+          <td class="pos-bad">72%</td>
+          <td class="pos-ok">+12.1</td>
+        </tr>
+        <tr>
+          <td class="pos-name">BTN</td>
+          <td>5,900</td>
+          <td class="pos-ok">38%</td>
+          <td class="pos-ok">7.2%</td>
+          <td class="pos-warn">80%</td>
+          <td class="pos-warn">58%</td>
+          <td class="pos-bad">68%</td>
+          <td class="pos-ok">+18.5</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 6. AI Coaching Summary -->
+  <div class="sect anim anim-d6">
+    <div class="sect__title">AI Coaching Summary</div>
+    <div class="insight">
+      <div class="insight__tag">Priority Action Plan</div>
+
+      <div class="insight__priority">
+        <div class="insight__priority-num">#1</div>
+        <div class="insight__priority-title">Fix your fold-to-3bet immediately.</div>
+        <div class="insight__priority-text">This is your #1 leak. Spend 20 minutes reviewing preflop charts for BTN and CO defense. This alone could save you $180/month. Start every session by reviewing one 3-bet defense scenario.</div>
+      </div>
+
+      <div class="insight__priority">
+        <div class="insight__priority-num">#2</div>
+        <div class="insight__priority-title">Slow down on the turn.</div>
+        <div class="insight__priority-text">You're barreling too much &mdash; ask yourself "does this turn card help my range?" before betting. Give up on wet turns with no equity. Expected gain: +2 BB/100.</div>
+      </div>
+
+      <div class="insight__priority">
+        <div class="insight__priority-num">#3</div>
+        <div class="insight__priority-title">Your postflop reads are strong.</div>
+        <div class="insight__priority-text">WTSD and W$SD are near-optimal. Your issue is primarily preflop (folding too much to 3bets) and flop/turn aggression (c-betting too wide). Fix the preflop leak first &mdash; it cascades into better postflop spots.</div>
+      </div>
+
+      <div class="insight__total">Estimated total improvement: +4.2 BB/100 (~$340/month at NL50)</div>
+    </div>
+  </div>
+
+  <!-- CTA Banner -->
+  <div class="cta-banner anim anim-d7">
+    <h2>This could be your report.</h2>
+    <p>Upload your hand history and get your personalized leak analysis in under a minute.</p>
+    <a href="index.html" class="cta-banner__btn">Get Your Report</a>
+  </div>
+
+  <!-- 7. Footer -->
+  <div class="footer anim anim-d8">
+    <div class="footer__brand">Generated by Poklytics &nbsp;|&nbsp; April 2026</div>
+    <div class="footer__disclaimer">
+      Based on 32,400 hands analyzed. Minimum 15 opportunity sample required per stat for leak detection.
+      Deviations from GTO baseline do not always indicate a leak &mdash; positional and opponent-dependent adjustments are expected.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poklytics — Poker Analytics Toolkit</title>
+<meta name="description" content="Poker tools that find your leaks, analyze your tournaments, and improve your game. Lifetime access for founding members.">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b0d14;--bg2:#10121a;--card:#141620;--card-elevated:#181b2a;
+    --border:#1e2035;--border-light:#272a42;
+    --text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;
+    --accent:#c8f135;--accent2:#d4f55a;
+    --blue:#3b82f6;--ok:#4db8ff;
+    --orange:#f59e0b;--warn:#f59e0b;--bad:#ff9500;
+    --purple:#a78bfa;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+
+  /* ── Noise overlay ── */
+  body::before{content:'';position:fixed;inset:0;opacity:0.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+
+  /* ── Animations ── */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes ringDraw{from{stroke-dasharray:0 377;}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+  @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
+  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}
+  .d4{animation-delay:.35s;}.d5{animation-delay:.45s;}.d6{animation-delay:.55s;}
+  .d7{animation-delay:.65s;}.d8{animation-delay:.75s;}
+
+  .page{max-width:940px;margin:0 auto;padding:0 24px;}
+  .mono{font-family:'DM Mono',monospace;}
+
+  /* ═══════════════════════════════════════════
+     NAV
+     ═══════════════════════════════════════════ */
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0;position:relative;}
+  .nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+  .nav__brand{font-size:1.15rem;font-weight:800;color:#fff;letter-spacing:-.5px;}
+  .nav__brand span{color:var(--accent);}
+  .nav__links{display:flex;gap:28px;font-size:.82rem;color:var(--dim);font-weight:500;}
+  .nav__links a{transition:.2s;position:relative;}
+  .nav__links a:hover{color:#fff;}
+  .nav__links a::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:1px;background:var(--accent);transform:scaleX(0);transition:.2s;}
+  .nav__links a:hover::after{transform:scaleX(1);}
+
+  /* ═══════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════ */
+  .hero{text-align:center;padding:100px 20px 72px;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse at center,rgba(200,241,53,.05) 0%,rgba(167,139,250,.02) 40%,transparent 70%);pointer-events:none;}
+  .hero::after{content:'';position:absolute;top:60%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;border:1px solid rgba(200,241,53,.04);pointer-events:none;}
+
+  .hero__tag{display:inline-flex;align-items:center;gap:7px;font-size:.6rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);border:1px solid rgba(200,241,53,.2);padding:6px 18px;border-radius:20px;margin-bottom:28px;background:rgba(200,241,53,.04);}
+  .hero__tag::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+
+  .hero h1{font-size:3.8rem;font-weight:800;color:#fff;line-height:1.05;letter-spacing:-2px;margin-bottom:20px;}
+  .hero h1 em{font-style:normal;color:var(--accent);position:relative;}
+  .hero h1 em::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--accent);border-radius:2px;opacity:.3;}
+
+  .hero__sub{font-size:1.1rem;color:var(--text2);max-width:520px;margin:0 auto 40px;line-height:1.7;}
+  .hero__ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:15px 34px;font-family:inherit;font-size:.92rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:.25s;text-align:center;}
+  .btn--primary{background:var(--accent);color:#0b0d14;box-shadow:0 4px 24px rgba(200,241,53,.2);}
+  .btn--primary:hover{box-shadow:0 6px 32px rgba(200,241,53,.35);transform:translateY(-2px);}
+  .btn--ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn--ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+  .hero__proof{display:flex;gap:32px;justify-content:center;margin-top:40px;font-size:.78rem;color:var(--dim);}
+  .hero__proof span{display:flex;align-items:center;gap:6px;}
+  .hero__proof .dot{width:5px;height:5px;background:var(--accent);border-radius:50%;opacity:.6;}
+
+  /* ═══════════════════════════════════════════
+     SECTIONS
+     ═══════════════════════════════════════════ */
+  .sect{padding:72px 0;}
+  .sect__label{font-size:.58rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:3px;text-align:center;margin-bottom:8px;}
+  .sect__title{font-size:2rem;font-weight:800;color:#fff;text-align:center;margin-bottom:12px;letter-spacing:-.5px;}
+  .sect__sub{font-size:.95rem;color:var(--text2);text-align:center;max-width:480px;margin:0 auto 48px;line-height:1.7;}
+
+  /* ═══════════════════════════════════════════
+     TOOL CARDS
+     ═══════════════════════════════════════════ */
+  .tools{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+  .tool{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px 28px;position:relative;transition:.3s;overflow:hidden;}
+  .tool::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);transition:.3s;}
+  .tool:hover{border-color:var(--border-light);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3);}
+
+  .tool--live{border-color:rgba(200,241,53,.2);}
+  .tool--live::before{background:linear-gradient(90deg,var(--accent),rgba(200,241,53,.3));}
+  .tool--live:hover{border-color:rgba(200,241,53,.3);}
+
+  .tool__badge{display:inline-flex;align-items:center;gap:5px;font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:16px;}
+  .badge--live{background:rgba(200,241,53,.1);color:var(--accent);border:1px solid rgba(200,241,53,.15);}
+  .badge--live::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+  .badge--soon{background:rgba(85,90,112,.1);color:var(--dim);border:1px solid rgba(85,90,112,.15);}
+
+  .tool__name{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:8px;letter-spacing:-.02em;}
+  .tool__desc{font-size:.84rem;color:var(--text2);line-height:1.65;margin-bottom:18px;}
+  .tool__price{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--dim);margin-bottom:16px;}
+
+  .tool__cta{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;font-family:inherit;font-size:.8rem;font-weight:700;border-radius:8px;cursor:pointer;transition:.2s;border:none;}
+  .cta--live{background:var(--accent);color:#0b0d14;}
+  .cta--live:hover{box-shadow:0 4px 16px rgba(200,241,53,.25);}
+  .cta--soon{background:transparent;color:var(--dim);border:1px solid var(--border);}
+  .cta--soon:hover{border-color:var(--text2);color:var(--text2);}
+
+  /* ═══════════════════════════════════════════
+     DEMO PREVIEW
+     ═══════════════════════════════════════════ */
+  .demo{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;margin-top:48px;position:relative;overflow:hidden;}
+  .demo::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--purple),transparent);opacity:.3;}
+
+  .demo__header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  .demo__label{font-size:.6rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:2px;}
+  .demo__link{font-size:.8rem;color:var(--accent);font-weight:600;transition:.2s;}
+  .demo__link:hover{text-decoration:underline;text-underline-offset:3px;}
+
+  .demo__grid{display:grid;grid-template-columns:160px 1fr;gap:28px;align-items:start;}
+
+  .demo__ring{text-align:center;}
+  .ring-wrap{position:relative;display:inline-block;width:130px;height:130px;}
+  .ring-svg{width:130px;height:130px;transform:rotate(-90deg);filter:drop-shadow(0 0 8px rgba(245,158,11,.15));}
+  .ring-bg{fill:none;stroke:var(--border);stroke-width:5;}
+  .ring-progress{fill:none;stroke-width:5;stroke-linecap:round;animation:ringDraw 1.2s ease-out forwards;filter:drop-shadow(0 0 6px currentColor);}
+  .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  .ring__num{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:500;line-height:1;color:var(--warn);}
+  .ring__label{font-size:.5rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;}
+  .ring__grade{font-size:.78rem;color:var(--text2);margin-top:10px;}
+  .ring__grade strong{color:var(--warn);}
+
+  .demo__stats{display:grid;gap:8px;}
+  .demo__stat{display:flex;justify-content:space-between;padding:10px 14px;border-radius:8px;background:var(--bg2);border:1px solid rgba(30,32,53,.5);}
+  .demo__stat-label{font-size:.82rem;color:var(--text2);}
+  .demo__stat-val{font-family:'DM Mono',monospace;font-size:.82rem;font-weight:500;}
+
+  .demo__gauges{margin-top:24px;}
+  .gauge-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(30,32,53,.4);}
+  .gauge-row:last-child{border-bottom:none;}
+  .gauge-name{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text2);width:100px;flex-shrink:0;}
+  .gauge-bar-wrap{flex:1;height:22px;background:var(--bg2);border-radius:6px;position:relative;overflow:visible;}
+  .gauge-bar{height:100%;border-radius:6px;z-index:1;position:relative;}
+  .gauge-bar.ok{background:linear-gradient(90deg,rgba(77,184,255,.2),var(--ok));}
+  .gauge-bar.warn{background:linear-gradient(90deg,rgba(245,158,11,.2),var(--warn));}
+  .gauge-bar.bad{background:linear-gradient(90deg,rgba(255,149,0,.2),var(--bad));}
+  .gauge-optimal{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--accent);border-radius:2px;z-index:3;box-shadow:0 0 8px rgba(200,241,53,.3);}
+  .gauge-optimal::before{content:'';position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:7px;height:7px;background:var(--accent);border-radius:50%;}
+  .gauge-optimal::after{content:'GTO';position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:.4rem;font-weight:700;color:var(--accent);letter-spacing:1px;}
+  .gauge-val{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;width:46px;text-align:right;flex-shrink:0;}
+
+  /* ═══════════════════════════════════════════
+     PRICING
+     ═══════════════════════════════════════════ */
+  .pricing{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;max-width:820px;margin:0 auto;}
+
+  .price-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px 28px;text-align:center;position:relative;transition:.3s;}
+  .price-card:hover{transform:translateY(-2px);}
+
+  .price-card--free{border-color:rgba(77,184,255,.2);overflow:hidden;}
+  .price-card--free::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ok);opacity:.5;}
+  .price-card--ltd{border-color:rgba(200,241,53,.25);overflow:hidden;}
+  .price-card--ltd::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple));opacity:.6;}
+  .price-card--ltd::after{content:'FOUNDING MEMBER';position:absolute;top:16px;left:50%;transform:translateX(-50%);font-size:.55rem;font-weight:700;letter-spacing:2.5px;color:#0b0d14;background:var(--accent);padding:4px 16px;border-radius:20px;box-shadow:0 2px 12px rgba(200,241,53,.2);}
+
+  .price__name{font-size:.85rem;font-weight:600;color:var(--text2);margin-bottom:4px;margin-top:28px;}
+  .price-card--free .price__name,.price-card:nth-child(2) .price__name{margin-top:0;}
+  .price__slash{font-size:.85rem;color:var(--dim);text-decoration:line-through;margin-bottom:2px;}
+  .price__amount{font-size:3rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1px;}
+  .price__amount span{font-size:.82rem;font-weight:400;color:var(--dim);}
+  .price__period{font-size:.78rem;color:var(--dim);margin-bottom:20px;}
+
+  .price__features{list-style:none;text-align:left;margin:0 0 28px;font-size:.82rem;color:var(--text2);}
+  .price__features li{padding:7px 0;border-bottom:1px solid rgba(30,32,53,.5);display:flex;align-items:center;gap:8px;}
+  .price__features li:last-child{border-bottom:none;}
+  .price__features li::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .price__features .yes::before{background:var(--accent);}
+  .price__features .no{color:var(--dim);}
+  .price__features .no::before{background:var(--dim);opacity:.3;}
+
+  .price__btn{display:block;width:100%;padding:14px;font-family:inherit;font-size:.92rem;font-weight:700;border-radius:10px;cursor:pointer;transition:.25s;border:none;}
+  .price__btn--primary{background:var(--accent);color:#0b0d14;box-shadow:0 4px 20px rgba(200,241,53,.15);}
+  .price__btn--primary:hover{box-shadow:0 6px 28px rgba(200,241,53,.3);transform:translateY(-1px);}
+  .price__btn--secondary{background:var(--bg2);color:var(--text2);border:1px solid var(--border);}
+  .price__btn--secondary:hover{border-color:var(--text2);color:#fff;}
+
+  .price__slots{font-size:.75rem;color:var(--bad);margin-top:14px;font-weight:600;text-align:center;}
+  .price__counter{margin-top:10px;}
+  .price__bar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+  .price__bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--bad));transition:width 1s ease;}
+  .price__bar-text{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--dim);}
+  .price__bar-text strong{color:var(--bad);}
+
+  /* ── More Coming ── */
+  .more{text-align:center;padding:24px 0 0;}
+  .more__pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:16px;}
+  .more__pill{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--dim);padding:6px 16px;background:var(--card);border:1px solid var(--border);border-radius:20px;transition:.2s;}
+  .more__pill:hover{border-color:var(--border-light);color:var(--text2);}
+  .more__note{font-size:.85rem;color:var(--text2);margin-top:12px;line-height:1.6;}
+
+  .trust{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;padding:24px 0 0;font-size:.78rem;color:var(--dim);}
+  .trust span{display:flex;align-items:center;gap:7px;}
+  .trust .dot{width:5px;height:5px;background:var(--accent);border-radius:50%;opacity:.5;}
+
+  /* ═══════════════════════════════════════════
+     EMAIL
+     ═══════════════════════════════════════════ */
+  .email-sect{text-align:center;padding:56px 0;}
+  .email-form{display:flex;gap:10px;max-width:460px;margin:0 auto;}
+  .email-form input{flex:1;padding:14px 18px;font-family:inherit;font-size:.92rem;background:var(--card);border:1px solid var(--border);border-radius:10px;color:#fff;outline:none;transition:.2s;}
+  .email-form input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,241,53,.08);}
+  .email-form input::placeholder{color:var(--dim);}
+  .email-form button{padding:14px 28px;font-family:inherit;font-size:.92rem;font-weight:700;background:var(--accent);color:#0b0d14;border:none;border-radius:10px;cursor:pointer;white-space:nowrap;transition:.25s;}
+  .email-form button:hover{box-shadow:0 4px 16px rgba(200,241,53,.25);}
+  .email-sect__note{font-size:.75rem;color:var(--dim);margin-top:12px;}
+
+  /* ═══════════════════════════════════════════
+     FAQ
+     ═══════════════════════════════════════════ */
+  .faq{max-width:640px;margin:0 auto;}
+  .faq-item{border-bottom:1px solid var(--border);padding:20px 0;}
+  .faq-q{font-size:.92rem;font-weight:600;color:#fff;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s;}
+  .faq-q:hover{color:var(--accent);}
+  .faq-q::after{content:'+';font-family:'DM Mono',monospace;font-size:1.1rem;color:var(--dim);transition:.3s;flex-shrink:0;margin-left:12px;}
+  .faq-item.open .faq-q::after{transform:rotate(45deg);color:var(--accent);}
+  .faq-a{font-size:.84rem;color:var(--text2);line-height:1.7;max-height:0;overflow:hidden;transition:.35s ease;}
+  .faq-item.open .faq-a{max-height:220px;padding-top:14px;}
+
+  /* ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ */
+  .footer{text-align:center;padding:28px 0;margin-top:48px;position:relative;}
+  .footer::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+  .footer__text{font-size:.72rem;color:var(--dim);letter-spacing:.5px;}
+
+  /* ═══════════════════════════════════════════
+     RESPONSIVE
+     ═══════════════════════════════════════════ */
+  @media(max-width:640px){
+    .hero h1{font-size:2.4rem;letter-spacing:-1px;}
+    .hero__ctas{flex-direction:column;align-items:center;}
+    .tools{grid-template-columns:1fr;}
+    .pricing{grid-template-columns:1fr !important;}
+    .demo__grid{grid-template-columns:1fr;justify-items:center;}
+    .email-form{flex-direction:column;}
+    .nav__links{display:none;}
+    .trust{flex-direction:column;align-items:center;gap:12px;}
+    .hero__proof{flex-direction:column;align-items:center;gap:8px;}
+    .hero{padding:60px 16px 48px;}
+    .sect{padding:48px 0;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Nav -->
+  <nav class="nav anim d1">
+    <div class="nav__brand">Pok<span>lytics</span></div>
+    <div class="nav__links">
+      <a href="#tools">Tools</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__tag anim d1">Poker Analytics Toolkit</div>
+    <h1 class="anim d2">Find your leaks.<br>Fix your <em>game</em>.</h1>
+    <p class="hero__sub anim d3">Upload your hand history. Get AI-powered analysis that shows exactly where you're losing money &mdash; and how to fix it.</p>
+    <div class="hero__ctas anim d4">
+      <a href="leak-report/" class="btn btn--primary">Get Free Report &rarr;</a>
+      <a href="#pricing" class="btn btn--ghost">Get Lifetime Access</a>
+    </div>
+    <div class="hero__proof anim d5">
+      <span><span class="dot"></span> No software to install</span>
+      <span><span class="dot"></span> GGPoker &amp; PokerStars</span>
+      <span><span class="dot"></span> Results in under 60s</span>
+    </div>
+  </section>
+
+  <!-- Tools -->
+  <section class="sect anim d3" id="tools">
+    <div class="sect__label">Tools</div>
+    <div class="sect__title">Everything you need to improve.</div>
+    <div class="sect__sub">One toolkit. Multiple tools. Each designed to find a specific edge in your game.</div>
+
+    <div class="tools">
+      <div class="tool tool--live">
+        <div class="tool__badge badge--live">Live Now</div>
+        <div class="tool__name">Leak Report</div>
+        <div class="tool__desc">Upload your hand history. Get a full stat breakdown with gauge bars vs GTO, leak detection with severity scoring, and AI coaching tips.</div>
+        <div class="tool__price">First report free &bull; $4.99 per report</div>
+        <a href="leak-report/" class="tool__cta cta--live">Get Free Report &rarr;</a>
+      </div>
+      <div class="tool">
+        <div class="tool__badge badge--soon">Coming Q2</div>
+        <div class="tool__name">Tournament Report</div>
+        <div class="tool__desc">Analyze your tournament results &mdash; ROI by stake, format breakdown, profit heatmap, bubble rate, and session timing insights.</div>
+        <div class="tool__price">$4.99 per report</div>
+        <a href="tournament-report/" class="tool__cta cta--soon">Learn More</a>
+      </div>
+      <div class="tool">
+        <div class="tool__badge badge--soon">Coming Q3</div>
+        <div class="tool__name">HandIQ</div>
+        <div class="tool__desc">Deep hand-by-hand analysis. Spot your most costly mistakes, find patterns across thousands of hands, and get personalized study plans.</div>
+        <div class="tool__price">$19.99/month</div>
+        <a href="handiq/" class="tool__cta cta--soon">Learn More</a>
+      </div>
+      <div class="tool">
+        <div class="tool__badge badge--soon">Coming Q3</div>
+        <div class="tool__name">Daily Spot</div>
+        <div class="tool__desc">One poker spot per day. Analyze it, compare your answer to GTO, and track your study streak. Like Wordle for poker.</div>
+        <div class="tool__price">Free &bull; $4.99/mo pro</div>
+        <a href="daily-spot/" class="tool__cta cta--soon">Learn More</a>
+      </div>
+    </div>
+
+    <!-- More Coming -->
+    <div class="more">
+      <div style="font-size:.58rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:3px;margin-bottom:16px;">And we're just getting started</div>
+      <div class="more__pills">
+        <span class="more__pill">Range Trainer</span>
+        <span class="more__pill">Session Tracker</span>
+        <span class="more__pill">Bankroll Manager</span>
+        <span class="more__pill">HUD Overlay</span>
+        <span class="more__pill">Opponent Notes</span>
+      </div>
+      <div class="more__note">Lifetime members get <strong style="color:var(--accent);">everything</strong> &mdash; including tools we haven't built yet.</div>
+    </div>
+  </section>
+
+  <!-- Demo Preview -->
+  <section class="sect anim d4">
+    <div class="sect__label">Leak Report &mdash; Live Now</div>
+    <div class="sect__title">See what you get.</div>
+    <div class="sect__sub">Your first report is free. Here's a sample from a real NL50 player.</div>
+
+    <div class="demo">
+      <div class="demo__header">
+        <div class="demo__label">Sample Report &mdash; NL50 Player, 32K hands</div>
+        <a href="leak-report/demo.html" class="demo__link">View Full Report &rarr;</a>
+      </div>
+      <div class="demo__grid">
+        <div class="demo__ring">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 130 130">
+              <circle class="ring-bg" cx="65" cy="65" r="55" />
+              <circle class="ring-progress" cx="65" cy="65" r="55"
+                      stroke="#f59e0b"
+                      stroke-dasharray="235 346"
+                      stroke-dashoffset="0" />
+            </svg>
+            <div class="ring-center">
+              <div class="ring__num">68</div>
+              <div class="ring__label">Health</div>
+            </div>
+          </div>
+          <div class="ring__grade">Grade: <strong>B-</strong></div>
+        </div>
+        <div class="demo__stats">
+          <div class="demo__stat"><span class="demo__stat-label">Leaks Found</span><span class="demo__stat-val" style="color:var(--bad)">4 issues</span></div>
+          <div class="demo__stat"><span class="demo__stat-label">Est. Leak Impact</span><span class="demo__stat-val" style="color:var(--warn)">~4.2 BB/100</span></div>
+          <div class="demo__stat"><span class="demo__stat-label">Strengths</span><span class="demo__stat-val" style="color:var(--ok)">3 areas</span></div>
+          <div class="demo__stat"><span class="demo__stat-label">Potential Gain</span><span class="demo__stat-val" style="color:var(--ok)">+$340/mo</span></div>
+        </div>
+      </div>
+
+      <div class="demo__gauges">
+        <div class="gauge-row"><div class="gauge-name">VPIP</div><div class="gauge-bar-wrap"><div class="gauge-bar ok" style="width:28%"></div><div class="gauge-optimal" style="left:26%"></div></div><div class="gauge-val" style="color:var(--ok)">28%</div></div>
+        <div class="gauge-row"><div class="gauge-name">PFR</div><div class="gauge-bar-wrap"><div class="gauge-bar ok" style="width:21%"></div><div class="gauge-optimal" style="left:22%"></div></div><div class="gauge-val" style="color:var(--ok)">21%</div></div>
+        <div class="gauge-row"><div class="gauge-name">3Bet</div><div class="gauge-bar-wrap"><div class="gauge-bar warn" style="width:5.1%"></div><div class="gauge-optimal" style="left:9%"></div></div><div class="gauge-val" style="color:var(--warn)">5.1%</div></div>
+        <div class="gauge-row"><div class="gauge-name">Fold to 3B</div><div class="gauge-bar-wrap"><div class="gauge-bar bad" style="width:72%"></div><div class="gauge-optimal" style="left:55%"></div></div><div class="gauge-val" style="color:var(--bad)">72%</div></div>
+        <div class="gauge-row"><div class="gauge-name">C-Bet Flop</div><div class="gauge-bar-wrap"><div class="gauge-bar warn" style="width:75%"></div><div class="gauge-optimal" style="left:55%"></div></div><div class="gauge-val" style="color:var(--warn)">75%</div></div>
+        <div class="gauge-row"><div class="gauge-name">C-Bet Turn</div><div class="gauge-bar-wrap"><div class="gauge-bar bad" style="width:68%"></div><div class="gauge-optimal" style="left:45%"></div></div><div class="gauge-val" style="color:var(--bad)">68%</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="sect anim d5" id="pricing">
+    <div class="sect__label">Pricing</div>
+    <div class="sect__title">Simple. No subscriptions needed.</div>
+    <div class="sect__sub">Buy individual reports, or lock in lifetime access as a founding member.</div>
+
+    <div class="pricing">
+
+      <!-- Free — Primary CTA -->
+      <div class="price-card price-card--free">
+        <div class="price__name">First Report</div>
+        <div class="price__amount">Free</div>
+        <div class="price__period">email required</div>
+        <ul class="price__features">
+          <li class="yes">Full leak analysis</li>
+          <li class="yes">AI coaching summary</li>
+          <li class="yes">Position breakdown</li>
+          <li class="yes">Gauge bars vs GTO</li>
+          <li class="yes">No credit card needed</li>
+        </ul>
+        <a href="leak-report/" class="price__btn price__btn--primary">Get Free Report &rarr;</a>
+      </div>
+
+      <!-- $4.99 — Price anchor -->
+      <div class="price-card">
+        <div class="price__name">Per Report</div>
+        <div class="price__amount">$4<span>.99</span></div>
+        <div class="price__period">each additional report</div>
+        <ul class="price__features">
+          <li class="yes">Full leak analysis</li>
+          <li class="yes">AI coaching summary</li>
+          <li class="yes">Position breakdown</li>
+          <li class="yes">Gauge bars vs GTO</li>
+          <li class="no">Future tools not included</li>
+        </ul>
+        <a href="leak-report/" class="price__btn price__btn--secondary">Start with Free</a>
+      </div>
+
+      <!-- LTD $49 — Highlight -->
+      <div class="price-card price-card--ltd">
+        <div class="price__name">Lifetime Deal</div>
+        <div class="price__slash">$99</div>
+        <div class="price__amount">$49</div>
+        <div class="price__period">one-time &mdash; everything, forever</div>
+        <ul class="price__features">
+          <li class="yes">Unlimited Leak Reports</li>
+          <li class="yes">All future tools included</li>
+          <li class="yes">Tournament, HandIQ, Daily Spot</li>
+          <li class="yes">Priority support</li>
+          <li class="yes">Founding member perks</li>
+        </ul>
+        <button class="price__btn price__btn--primary" onclick="handleLTD()">Get Lifetime Access</button>
+        <div class="price__counter">
+          <div class="price__bar"><div class="price__bar-fill" style="width:53%"></div></div>
+          <div class="price__bar-text"><strong>47</strong> of 100 slots remaining</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="trust">
+      <span><span class="dot"></span> 14-day money-back guarantee</span>
+      <span><span class="dot"></span> Secure payment via Stripe</span>
+      <span><span class="dot"></span> Built by a poker player</span>
+    </div>
+  </section>
+
+  <!-- Email -->
+  <section class="email-sect anim d6" id="email">
+    <div class="sect__title" style="margin-bottom:8px;">Not ready yet?</div>
+    <p style="color:var(--text2);margin-bottom:24px;font-size:.92rem;">Get notified when new tools launch. No spam.</p>
+    <form class="email-form" onsubmit="handleEmail(event)">
+      <input type="email" placeholder="your@email.com" required id="email-input">
+      <button type="submit">Notify Me</button>
+    </form>
+    <div class="email-sect__note">Join 230+ poker players on the list.</div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="sect anim d7" id="faq">
+    <div class="sect__title" style="margin-bottom:36px;">FAQ</div>
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What poker sites are supported?</div>
+        <div class="faq-a">Currently GGPoker and PokerStars hand histories. We're adding 888poker, WPT Global, and more soon. Lifetime members get all future site support automatically.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What does "Lifetime Deal" mean exactly?</div>
+        <div class="faq-a">Pay once, get access to every tool we build &mdash; forever. No monthly fees, no renewals. This includes Leak Report, Tournament Report, HandIQ, Daily Spot, and any future tools. This price is only available for the first 100 founding members.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Is my hand history data safe?</div>
+        <div class="faq-a">Yes. Your files are processed on our server, the report is generated, and the raw hand history is deleted immediately. We never store your hand data or share it with anyone.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What if I want a refund?</div>
+        <div class="faq-a">We offer a 14-day money-back guarantee on the Lifetime Deal. If you're not satisfied, email us and we'll refund you &mdash; no questions asked.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">When will other tools launch?</div>
+        <div class="faq-a">Tournament Report is planned for Q2 2026. HandIQ and Daily Spot are planned for Q3 2026. Lifetime members get early access to everything.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Who built this?</div>
+        <div class="faq-a">A poker player who got tired of not having affordable, clean analysis tools. This is an indie project built with love for the grind. If you have feedback, we actually read every message.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer__text">&copy; 2026 Poklytics &mdash; Built by a poker player, for poker players.</div>
+  </footer>
+
+</div>
+
+<script>
+function toggleFaq(el){el.parentElement.classList.toggle('open');}
+
+function handleEmail(e){
+  e.preventDefault();
+  var input=document.getElementById('email-input');
+  // TODO: POST to /api/subscribe
+  alert('Thanks! We\'ll notify you at: '+input.value);
+  input.value='';
+}
+
+function handleLTD(){
+  // TODO: Stripe Checkout
+  alert('Stripe checkout coming soon! Leave your email below to be first in line.');
+  document.getElementById('email').scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>

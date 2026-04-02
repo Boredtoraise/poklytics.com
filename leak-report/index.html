@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leak Report — Poklytics</title>
+<meta name="description" content="Upload your hand history. Get a full leak analysis with AI coaching. First report free.">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b0d14;--bg2:#10121a;--card:#141620;--card-elevated:#181b2a;
+    --border:#1e2035;--border-light:#272a42;
+    --text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;
+    --accent:#c8f135;--accent2:#d4f55a;
+    --blue:#3b82f6;--ok:#4db8ff;
+    --orange:#f59e0b;--warn:#f59e0b;--bad:#ff9500;
+    --purple:#a78bfa;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+
+  /* ── Noise overlay ── */
+  body::before{content:'';position:fixed;inset:0;opacity:0.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+
+  /* ── Animations ── */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes ringDraw{from{stroke-dasharray:0 377;}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
+  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}
+  .d4{animation-delay:.35s;}.d5{animation-delay:.45s;}.d6{animation-delay:.55s;}
+  .d7{animation-delay:.65s;}.d8{animation-delay:.75s;}
+
+  .page{max-width:860px;margin:0 auto;padding:0 24px;}
+  .mono{font-family:'DM Mono',monospace;}
+
+  /* ── Nav ── */
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0;position:relative;}
+  .nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+  .nav__brand{font-size:1.15rem;font-weight:800;color:#fff;letter-spacing:-.5px;}
+  .nav__brand span{color:var(--accent);}
+  .nav__back{font-size:.8rem;color:var(--dim);font-weight:500;display:flex;align-items:center;gap:6px;transition:.2s;}
+  .nav__back:hover{color:var(--text2);}
+  .nav__back::before{content:'←';}
+
+  /* ── Hero ── */
+  .hero{text-align:center;padding:96px 20px 64px;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse at center,rgba(200,241,53,.05) 0%,rgba(167,139,250,.02) 40%,transparent 70%);pointer-events:none;}
+  .hero::after{content:'';position:absolute;top:60%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;border:1px solid rgba(200,241,53,.04);pointer-events:none;}
+
+  .hero__tag{display:inline-flex;align-items:center;gap:7px;font-size:.6rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);border:1px solid rgba(200,241,53,.2);padding:6px 18px;border-radius:20px;margin-bottom:28px;background:rgba(200,241,53,.04);}
+  .hero__tag::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+
+  .hero h1{font-size:3.6rem;font-weight:800;color:#fff;line-height:1.05;letter-spacing:-2px;margin-bottom:20px;}
+  .hero h1 em{font-style:normal;color:var(--accent);position:relative;}
+  .hero h1 em::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--accent);border-radius:2px;opacity:.3;}
+
+  .hero__sub{font-size:1.05rem;color:var(--text2);max-width:520px;margin:0 auto 40px;line-height:1.7;}
+  .hero__ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:15px 34px;font-family:inherit;font-size:.92rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:.25s;text-align:center;}
+  .btn--primary{background:var(--accent);color:#0b0d14;box-shadow:0 4px 24px rgba(200,241,53,.2);}
+  .btn--primary:hover{box-shadow:0 6px 32px rgba(200,241,53,.35);transform:translateY(-2px);}
+  .btn--ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn--ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+  .hero__proof{display:flex;gap:28px;justify-content:center;margin-top:36px;font-size:.78rem;color:var(--dim);}
+  .hero__proof span{display:flex;align-items:center;gap:6px;}
+  .hero__proof .dot{width:5px;height:5px;background:var(--accent);border-radius:50%;opacity:.6;}
+
+  /* ── Gradient separator ── */
+  .sep{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:0;}
+
+  /* ── Sections ── */
+  .sect{padding:72px 0;}
+  .sect__label{font-size:.58rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:3px;text-align:center;margin-bottom:8px;}
+  .sect__title{font-size:2rem;font-weight:800;color:#fff;text-align:center;margin-bottom:12px;letter-spacing:-.5px;}
+  .sect__sub{font-size:.92rem;color:var(--text2);text-align:center;max-width:480px;margin:0 auto 48px;line-height:1.7;}
+
+  /* ── How it works ── */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px 24px;text-align:center;position:relative;transition:.3s;overflow:hidden;}
+  .step::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);transition:.3s;}
+  .step:hover{border-color:var(--border-light);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3);}
+  .step:hover::before{background:var(--accent);opacity:.5;}
+  .step__num{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:500;color:var(--accent);margin-bottom:12px;opacity:.7;}
+  .step__title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:8px;}
+  .step__desc{font-size:.84rem;color:var(--text2);line-height:1.65;}
+
+  /* ── Demo card ── */
+  .demo{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;overflow:hidden;}
+  .demo::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--purple),transparent);opacity:.3;}
+  .demo__header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .demo__label{font-size:.6rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:2px;}
+  .demo__badge{font-size:.6rem;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.15);padding:3px 12px;border-radius:10px;}
+
+  /* ── Score ring ── */
+  .demo__top{display:grid;grid-template-columns:160px 1fr;gap:28px;align-items:start;margin-bottom:28px;}
+  .demo__ring{text-align:center;}
+  .ring-wrap{position:relative;display:inline-block;width:130px;height:130px;}
+  .ring-svg{width:130px;height:130px;transform:rotate(-90deg);filter:drop-shadow(0 0 8px rgba(245,158,11,.15));}
+  .ring-bg{fill:none;stroke:var(--border);stroke-width:5;}
+  .ring-progress{fill:none;stroke-width:5;stroke-linecap:round;animation:ringDraw 1.2s ease-out forwards;filter:drop-shadow(0 0 6px currentColor);}
+  .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  .ring__num{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:500;line-height:1;color:var(--warn);}
+  .ring__label{font-size:.5rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;}
+  .ring__grade{font-size:.78rem;color:var(--text2);margin-top:10px;}
+  .ring__grade strong{color:var(--warn);}
+
+  .demo__stats{display:grid;gap:8px;}
+  .demo__stat{display:flex;justify-content:space-between;padding:10px 14px;border-radius:8px;background:var(--bg2);border:1px solid rgba(30,32,53,.5);}
+  .demo__stat-label{font-size:.82rem;color:var(--text2);}
+  .demo__stat-val{font-family:'DM Mono',monospace;font-size:.82rem;font-weight:500;}
+
+  /* ── Gauges ── */
+  .gauge-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(30,32,53,.4);}
+  .gauge-row:last-child{border-bottom:none;}
+  .gauge-name{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text2);width:100px;flex-shrink:0;}
+  .gauge-bar-wrap{flex:1;height:22px;background:var(--bg2);border-radius:6px;position:relative;overflow:visible;}
+  .gauge-bar{height:100%;border-radius:6px;z-index:1;position:relative;}
+  .gauge-bar.ok{background:linear-gradient(90deg,rgba(77,184,255,.2),var(--ok));}
+  .gauge-bar.warn{background:linear-gradient(90deg,rgba(245,158,11,.2),var(--warn));}
+  .gauge-bar.bad{background:linear-gradient(90deg,rgba(255,149,0,.2),var(--bad));}
+  .gauge-optimal{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--accent);border-radius:2px;z-index:3;box-shadow:0 0 8px rgba(200,241,53,.3);}
+  .gauge-optimal::before{content:'';position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:7px;height:7px;background:var(--accent);border-radius:50%;}
+  .gauge-optimal::after{content:'GTO';position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:.4rem;font-weight:700;color:var(--accent);letter-spacing:1px;}
+  .gauge-val{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;width:46px;text-align:right;flex-shrink:0;}
+
+  /* ── Leak cards ── */
+  .leak{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin-bottom:12px;border-left:4px solid;transition:.2s;}
+  .leak:hover{border-color:var(--border-light);}
+  .leak.critical{border-left-color:var(--bad);}
+  .leak.warning{border-left-color:var(--warn);}
+  .leak.strength{border-left-color:var(--ok);}
+  .leak__head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .leak__title{font-size:.95rem;font-weight:700;color:#fff;}
+  .leak__sev{font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:10px;}
+  .sev-c{background:rgba(255,149,0,.12);color:var(--bad);}
+  .sev-w{background:rgba(245,158,11,.12);color:var(--warn);}
+  .sev-s{background:rgba(77,184,255,.12);color:var(--ok);}
+  .leak__stat{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--dim);margin-bottom:8px;}
+  .leak__desc{font-size:.84rem;color:var(--text2);line-height:1.7;}
+  .leak__desc strong{color:#fff;}
+  .leak__fix{margin-top:12px;padding:12px 14px;background:var(--bg2);border-radius:8px;font-size:.8rem;color:var(--text2);line-height:1.7;border:1px solid rgba(30,32,53,.5);}
+  .leak__fix-tag{font-size:.58rem;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
+
+  /* ── Position table ── */
+  .ptbl{width:100%;border-collapse:collapse;font-size:.75rem;}
+  .ptbl th{text-align:center;padding:10px 6px;color:var(--dim);font-size:.6rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);}
+  .ptbl td{text-align:center;padding:9px 6px;border-bottom:1px solid rgba(30,32,53,.4);font-family:'DM Mono',monospace;}
+  .ptbl tr:hover td{background:rgba(24,27,42,.5);}
+  .pn{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;color:#fff;}
+
+  /* ── AI Insight ── */
+  .insight{background:linear-gradient(135deg,rgba(245,158,11,.05),rgba(139,92,246,.05));border:1px solid rgba(245,158,11,.15);border-radius:16px;padding:28px 32px;position:relative;overflow:hidden;}
+  .insight::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--warn),var(--purple));opacity:.3;}
+  .insight__tag{font-size:.58rem;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+  .insight__text{font-size:.88rem;color:var(--text2);line-height:1.85;}
+  .insight__text strong{color:#fff;}
+
+  /* ── Pricing ── */
+  .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:860px;margin:0 auto;}
+
+  .price-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px 24px;text-align:center;position:relative;transition:.3s;}
+  .price-card:hover{transform:translateY(-2px);}
+
+  .price-card--featured{border-color:rgba(200,241,53,.25);overflow:hidden;}
+  .price-card--featured::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple));opacity:.6;}
+  .price-card--featured::after{content:'FOUNDING MEMBER';position:absolute;top:16px;left:50%;transform:translateX(-50%);font-size:.5rem;font-weight:700;letter-spacing:2.5px;color:#0b0d14;background:var(--accent);padding:4px 16px;border-radius:20px;white-space:nowrap;}
+
+  .price__name{font-size:.82rem;font-weight:600;color:var(--text2);margin-bottom:6px;}
+  .price-card--featured .price__name{margin-top:32px;}
+  .price__slash{font-size:.85rem;color:var(--dim);text-decoration:line-through;margin-bottom:2px;}
+  .price__amount{font-size:2.8rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1px;}
+  .price__amount span{font-size:.8rem;font-weight:400;color:var(--dim);}
+  .price__period{font-size:.75rem;color:var(--dim);margin-bottom:20px;}
+
+  .price__features{list-style:none;text-align:left;margin:0 0 24px;font-size:.8rem;color:var(--text2);}
+  .price__features li{padding:7px 0;border-bottom:1px solid rgba(30,32,53,.5);display:flex;align-items:center;gap:8px;}
+  .price__features li:last-child{border-bottom:none;}
+  .price__features li::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .price__features .yes::before{background:var(--accent);}
+  .price__features .no{color:var(--dim);}
+  .price__features .no::before{background:var(--dim);opacity:.3;}
+
+  .price__btn{display:block;width:100%;padding:14px;font-family:inherit;font-size:.9rem;font-weight:700;border-radius:10px;cursor:pointer;transition:.25s;border:none;}
+  .price__btn--primary{background:var(--accent);color:#0b0d14;box-shadow:0 4px 20px rgba(200,241,53,.15);}
+  .price__btn--primary:hover{box-shadow:0 6px 28px rgba(200,241,53,.3);transform:translateY(-1px);}
+  .price__btn--secondary{background:var(--bg2);color:var(--text2);border:1px solid var(--border);}
+  .price__btn--secondary:hover{border-color:var(--text2);color:#fff;}
+
+  .price__counter{margin-top:12px;}
+  .price__bar{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+  .price__bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--bad));transition:width 1s ease;}
+  .price__bar-text{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--dim);}
+  .price__bar-text strong{color:var(--bad);}
+
+  .trust{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;padding:28px 0 0;font-size:.76rem;color:var(--dim);}
+  .trust span{display:flex;align-items:center;gap:7px;}
+  .trust .dot{width:5px;height:5px;background:var(--accent);border-radius:50%;opacity:.5;}
+
+  /* ── Upload Zone ── */
+  .upload{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:48px 32px;text-align:center;cursor:pointer;transition:.3s;position:relative;}
+  .upload:hover,.upload.dragover{border-color:var(--accent);background:rgba(200,241,53,.02);}
+  .upload.dragover{box-shadow:0 0 40px rgba(200,241,53,.08);}
+  .upload__icon{font-size:2.4rem;margin-bottom:12px;opacity:.6;}
+  .upload__title{font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:6px;}
+  .upload__sub{font-size:.85rem;color:var(--text2);margin-bottom:16px;}
+  .upload__btn{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;font-family:inherit;font-size:.88rem;font-weight:700;background:var(--accent);color:#0b0d14;border:none;border-radius:10px;cursor:pointer;transition:.2s;}
+  .upload__btn:hover{box-shadow:0 4px 16px rgba(200,241,53,.25);}
+  .upload__note{font-size:.72rem;color:var(--dim);margin-top:14px;}
+  .upload__input{display:none;}
+
+  /* ── Export Guide ── */
+  .export-guide{margin-top:20px;max-width:600px;margin-left:auto;margin-right:auto;}
+  .export-toggle{font-size:.82rem;font-weight:600;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s;padding:8px 0;}
+  .export-toggle:hover{text-decoration:underline;text-underline-offset:3px;}
+  .export-toggle::after{content:'+';font-family:'DM Mono',monospace;font-size:1rem;transition:.3s;}
+  .export-guide.open .export-toggle::after{transform:rotate(45deg);}
+  .export-cards{max-height:0;overflow:hidden;transition:.4s ease;}
+  .export-guide.open .export-cards{max-height:500px;padding-top:16px;}
+  .export-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:10px;}
+  .export-card__site{font-size:.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+  .export-card ol{padding-left:18px;font-size:.82rem;color:var(--text2);line-height:1.8;}
+  .export-card ol li{padding:2px 0;}
+  .export-card ol strong{color:#fff;}
+
+  /* ── Processing ── */
+  .processing{display:none;text-align:center;padding:48px 32px;}
+  .processing.show{display:block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .processing__spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  .processing__text{font-size:.95rem;color:var(--text2);}
+  .processing__sub{font-size:.78rem;color:var(--dim);margin-top:6px;}
+
+  /* ── Preview Results (after upload) ── */
+  .results{display:none;}
+  .results.show{display:block;}
+  .results__banner{text-align:center;padding:14px;background:rgba(200,241,53,.06);border:1px solid rgba(200,241,53,.15);border-radius:10px;margin-bottom:28px;font-size:.82rem;color:var(--accent);font-weight:600;}
+
+  /* ── Email Gate ── */
+  .email-gate{background:linear-gradient(135deg,rgba(200,241,53,.04),rgba(167,139,250,.04));border:1px solid rgba(200,241,53,.15);border-radius:16px;padding:40px 32px;text-align:center;margin-top:32px;position:relative;overflow:hidden;}
+  .email-gate::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--purple),transparent);opacity:.4;}
+  .email-gate__title{font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:8px;}
+  .email-gate__sub{font-size:.88rem;color:var(--text2);margin-bottom:24px;max-width:420px;margin-left:auto;margin-right:auto;line-height:1.6;}
+  .email-gate__form{display:flex;gap:10px;max-width:460px;margin:0 auto;}
+  .email-gate__form input{flex:1;padding:14px 18px;font-family:inherit;font-size:.9rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:#fff;outline:none;transition:.2s;}
+  .email-gate__form input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,241,53,.08);}
+  .email-gate__form input::placeholder{color:var(--dim);}
+  .email-gate__form button{padding:14px 28px;font-family:inherit;font-size:.9rem;font-weight:700;background:var(--accent);color:#0b0d14;border:none;border-radius:10px;cursor:pointer;white-space:nowrap;transition:.25s;}
+  .email-gate__form button:hover{box-shadow:0 4px 16px rgba(200,241,53,.25);}
+  .email-gate__note{font-size:.72rem;color:var(--dim);margin-top:12px;}
+  .email-gate__features{display:flex;gap:20px;justify-content:center;margin-top:16px;font-size:.75rem;color:var(--dim);}
+  .email-gate__features span{display:flex;align-items:center;gap:5px;}
+  .email-gate__features .dot{width:4px;height:4px;background:var(--accent);border-radius:50;}
+
+  /* ── Footer ── */
+  .footer{text-align:center;padding:28px 0;margin-top:48px;position:relative;}
+  .footer::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+  .footer__text{font-size:.72rem;color:var(--dim);letter-spacing:.5px;}
+
+  /* ── Responsive ── */
+  @media(max-width:640px){
+    .hero h1{font-size:2.4rem;letter-spacing:-1px;}
+    .hero__ctas{flex-direction:column;align-items:center;}
+    .hero__proof{flex-wrap:wrap;gap:12px;}
+    .steps{grid-template-columns:1fr;}
+    .pricing-grid{grid-template-columns:1fr;}
+    .demo__top{grid-template-columns:1fr;justify-items:center;}
+    .email-gate__form{flex-direction:column;}
+    .email-gate__features{flex-direction:column;align-items:center;gap:8px;}
+    .gauge-name{width:78px;font-size:.68rem;}
+    .hero{padding:60px 16px 48px;}
+    .sect{padding:48px 0;}
+    .email-sect{padding:32px 24px;}
+    .trust{flex-direction:column;align-items:center;gap:12px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Nav -->
+  <nav class="nav anim d1">
+    <a href="../" class="nav__brand">Pok<span>lytics</span></a>
+    <a href="../" class="nav__back">Back to Tools</a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__tag anim d1">Leak Report</div>
+    <h1 class="anim d2">Find your leaks.<br>Fix your <em>game</em>.</h1>
+    <p class="hero__sub anim d3">Upload your hand history. Get a full stat breakdown with AI-powered leak analysis &mdash; like a coaching session without the hourly rate.</p>
+    <div class="hero__ctas anim d4">
+      <a href="#get-report" class="btn btn--primary">Upload &amp; Analyze Free &rarr;</a>
+      <a href="#pricing" class="btn btn--ghost">See Pricing</a>
+    </div>
+    <div class="hero__proof anim d5">
+      <span><span class="dot"></span> First report free</span>
+      <span><span class="dot"></span> GGPoker &amp; PokerStars</span>
+      <span><span class="dot"></span> Results in under 60s</span>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- How it works -->
+  <section class="sect anim d3" id="how">
+    <div class="sect__label">How it works</div>
+    <div class="sect__title">Three steps. One minute.</div>
+    <div class="sect__sub">No software to install. Export your hands, upload the zip, get your report.</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step__num">01</div>
+        <div class="step__title">Upload</div>
+        <div class="step__desc">Export your hand history from GGPoker or PokerStars and upload the zip file.</div>
+      </div>
+      <div class="step">
+        <div class="step__num">02</div>
+        <div class="step__title">Scan</div>
+        <div class="step__desc">We analyze every position, street, and situation across thousands of hands.</div>
+      </div>
+      <div class="step">
+        <div class="step__num">03</div>
+        <div class="step__title">Fix</div>
+        <div class="step__desc">Get your leak report with a severity score, fix drills, and AI coaching tips.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- Demo preview -->
+  <section class="sect anim d4" id="demo">
+    <div class="sect__label">Preview</div>
+    <div class="sect__title">See what you get.</div>
+    <div class="sect__sub">A sample Leak Report &mdash; exactly what your report will look like.</div>
+
+    <div class="demo">
+      <div class="demo__header">
+        <div class="demo__label">Sample Report &mdash; NL50 Player, 32K hands</div>
+        <div class="demo__badge">Live Preview</div>
+      </div>
+
+      <!-- Score ring + summary -->
+      <div class="demo__top">
+        <div class="demo__ring">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 130 130">
+              <circle class="ring-bg" cx="65" cy="65" r="55" />
+              <circle class="ring-progress" cx="65" cy="65" r="55"
+                      stroke="#f59e0b"
+                      stroke-dasharray="235 346"
+                      stroke-dashoffset="0" />
+            </svg>
+            <div class="ring-center">
+              <div class="ring__num">68</div>
+              <div class="ring__label">Health</div>
+            </div>
+          </div>
+          <div class="ring__grade">Grade: <strong>B-</strong></div>
+        </div>
+        <div class="demo__stats">
+          <div class="demo__stat"><span class="demo__stat-label">Leaks Found</span><span class="demo__stat-val" style="color:var(--bad)">4 issues</span></div>
+          <div class="demo__stat"><span class="demo__stat-label">Est. Leak Impact</span><span class="demo__stat-val" style="color:var(--warn)">~4.2 BB/100</span></div>
+          <div class="demo__stat"><span class="demo__stat-label">Strengths</span><span class="demo__stat-val" style="color:var(--ok)">3 areas</span></div>
+          <div class="demo__stat"><span class="demo__stat-label">Potential Gain</span><span class="demo__stat-val" style="color:var(--ok)">+$340/mo</span></div>
+        </div>
+      </div>
+
+      <!-- Gauge bars -->
+      <div class="gauge-row"><div class="gauge-name">VPIP</div><div class="gauge-bar-wrap"><div class="gauge-bar ok" style="width:28%"></div><div class="gauge-optimal" style="left:26%"></div></div><div class="gauge-val" style="color:var(--ok)">28%</div></div>
+      <div class="gauge-row"><div class="gauge-name">PFR</div><div class="gauge-bar-wrap"><div class="gauge-bar ok" style="width:21%"></div><div class="gauge-optimal" style="left:22%"></div></div><div class="gauge-val" style="color:var(--ok)">21%</div></div>
+      <div class="gauge-row"><div class="gauge-name">3Bet</div><div class="gauge-bar-wrap"><div class="gauge-bar warn" style="width:5.1%"></div><div class="gauge-optimal" style="left:9%"></div></div><div class="gauge-val" style="color:var(--warn)">5.1%</div></div>
+      <div class="gauge-row"><div class="gauge-name">Fold to 3B</div><div class="gauge-bar-wrap"><div class="gauge-bar bad" style="width:72%"></div><div class="gauge-optimal" style="left:55%"></div></div><div class="gauge-val" style="color:var(--bad)">72%</div></div>
+      <div class="gauge-row"><div class="gauge-name">C-Bet Flop</div><div class="gauge-bar-wrap"><div class="gauge-bar warn" style="width:75%"></div><div class="gauge-optimal" style="left:55%"></div></div><div class="gauge-val" style="color:var(--warn)">75%</div></div>
+      <div class="gauge-row"><div class="gauge-name">C-Bet Turn</div><div class="gauge-bar-wrap"><div class="gauge-bar bad" style="width:68%"></div><div class="gauge-optimal" style="left:45%"></div></div><div class="gauge-val" style="color:var(--bad)">68%</div></div>
+    </div>
+  </section>
+
+  <!-- Leak cards -->
+  <section class="sect anim d4">
+    <div class="sect__label">Leaks Found</div>
+    <div class="sect__title">We found 4 issues to fix.</div>
+    <div class="sect__sub">Each leak is ranked by severity and estimated monthly cost to your bankroll.</div>
+
+    <div class="leak critical">
+      <div class="leak__head">
+        <div class="leak__title">Fold to 3-Bet Too High</div>
+        <div class="leak__sev sev-c">Critical</div>
+      </div>
+      <div class="leak__stat">Your: 72% &nbsp;|&nbsp; Optimal: 50–58% &nbsp;|&nbsp; Est. Cost: ~$180/mo</div>
+      <div class="leak__desc">Opponents can exploit you by 3-betting light and printing money every time you fold. This is your most expensive leak.</div>
+      <div class="leak__fix">
+        <div class="leak__fix-tag">How to Fix</div>
+        Widen your 4-bet bluff range from BTN/CO. Add <strong>A5s, A4s, suited connectors</strong> to your defending range. Stop folding to positional 3-bets without a plan.
+      </div>
+    </div>
+
+    <div class="leak critical">
+      <div class="leak__head">
+        <div class="leak__title">C-Bet Turn Too Aggressive</div>
+        <div class="leak__sev sev-c">Critical</div>
+      </div>
+      <div class="leak__stat">Your: 68% &nbsp;|&nbsp; Optimal: 40–48% &nbsp;|&nbsp; Est. Cost: ~$110/mo</div>
+      <div class="leak__desc">You're firing the turn too often with air on unfavorable runouts. Opponents with hands are calling you down easily.</div>
+      <div class="leak__fix">
+        <div class="leak__fix-tag">How to Fix</div>
+        Only barrel with <strong>strong made hands, nut draws, and blockers</strong>. Give up on wet turn cards that miss your range. Ask: does this card improve my range or theirs?
+      </div>
+    </div>
+
+    <div class="leak warning">
+      <div class="leak__head">
+        <div class="leak__title">3-Bet Frequency Too Low</div>
+        <div class="leak__sev sev-w">Warning</div>
+      </div>
+      <div class="leak__stat">Your: 5.1% &nbsp;|&nbsp; Optimal: 8–10%</div>
+      <div class="leak__desc">You're playing too passively preflop, missing value with premium hands and letting opponents steal too cheaply. Fix the fold-to-3bet leak first &mdash; it will help you here too.</div>
+    </div>
+
+    <div class="leak strength">
+      <div class="leak__head">
+        <div class="leak__title">Showdown Stats</div>
+        <div class="leak__sev sev-s">Strength</div>
+      </div>
+      <div class="leak__stat">WTSD: 27% &nbsp;|&nbsp; W$SD: 52% &mdash; Both near optimal</div>
+      <div class="leak__desc">You're picking the right spots to go to showdown and winning when you do. Your postflop hand-reading is solid &mdash; fix the preflop leaks and these numbers will compound.</div>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- Position breakdown -->
+  <section class="sect anim d5">
+    <div class="sect__label">By Position</div>
+    <div class="sect__title">Find where you're leaking most.</div>
+    <div class="sect__sub">Your stats broken down by seat. Spots in orange or faded are costing you money.</div>
+    <div class="demo" style="padding:20px;overflow-x:auto;">
+      <table class="ptbl">
+        <tr>
+          <th>Pos</th><th>VPIP</th><th>PFR</th><th>3Bet</th><th>F/3B</th><th>CB-F</th><th>CB-T</th><th>BB/100</th>
+        </tr>
+        <tr>
+          <td class="pn">UTG</td>
+          <td style="color:var(--ok)">15%</td><td style="color:var(--ok)">13%</td>
+          <td style="color:var(--ok)">4.2%</td><td style="color:var(--bad)">78%</td>
+          <td style="color:var(--warn)">72%</td><td style="color:var(--bad)">70%</td>
+          <td style="color:var(--ok)">+8.2</td>
+        </tr>
+        <tr>
+          <td class="pn">MP</td>
+          <td style="color:var(--ok)">18%</td><td style="color:var(--ok)">16%</td>
+          <td style="color:var(--warn)">4.8%</td><td style="color:var(--bad)">74%</td>
+          <td style="color:var(--warn)">74%</td><td style="color:var(--bad)">65%</td>
+          <td style="color:var(--ok)">+5.4</td>
+        </tr>
+        <tr>
+          <td class="pn">CO</td>
+          <td style="color:var(--ok)">26%</td><td style="color:var(--ok)">22%</td>
+          <td style="color:var(--warn)">5.5%</td><td style="color:var(--bad)">70%</td>
+          <td style="color:var(--warn)">78%</td><td style="color:var(--bad)">72%</td>
+          <td style="color:var(--ok)">+12.1</td>
+        </tr>
+        <tr>
+          <td class="pn">BTN</td>
+          <td style="color:var(--ok)">38%</td><td style="color:var(--ok)">30%</td>
+          <td style="color:var(--ok)">7.2%</td><td style="color:var(--warn)">65%</td>
+          <td style="color:var(--warn)">80%</td><td style="color:var(--bad)">68%</td>
+          <td style="color:var(--ok)">+18.5</td>
+        </tr>
+        <tr>
+          <td class="pn">SB</td>
+          <td style="color:var(--ok)">32%</td><td style="color:var(--ok)">24%</td>
+          <td style="color:var(--ok)">8.1%</td><td style="color:var(--bad)">72%</td>
+          <td style="color:var(--warn)">70%</td><td style="color:var(--bad)">66%</td>
+          <td style="color:var(--bad)">-14.2</td>
+        </tr>
+        <tr>
+          <td class="pn">BB</td>
+          <td style="color:var(--ok)">36%</td><td style="color:var(--ok)">12%</td>
+          <td style="color:var(--ok)">9.5%</td><td style="color:var(--warn)">68%</td>
+          <td style="color:var(--warn)">62%</td><td style="color:var(--warn)">55%</td>
+          <td style="color:var(--bad)">-22.8</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- AI insight -->
+  <section class="sect anim d5">
+    <div class="sect__label">AI-Powered</div>
+    <div class="sect__title">Your action plan.</div>
+    <div class="insight">
+      <div class="insight__tag">AI Coaching Summary</div>
+      <div class="insight__text">
+        <strong>1. Fix your fold-to-3bet first.</strong> This is your #1 leak &mdash; saving ~$180/month on its own.<br><br>
+        <strong>2. Slow down on the turn.</strong> Before betting, ask: "does this card help my range?" If the answer is no, check back.<br><br>
+        <strong>3. Your postflop reads are strong.</strong> Fix the preflop leaks first &mdash; better spots preflop cascade into better postflop decisions.<br><br>
+        <strong>Estimated total improvement: +4.2 BB/100 (~$340/month at NL50)</strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- Pricing -->
+  <section class="sect anim d6" id="pricing">
+    <div class="sect__label">Pricing</div>
+    <div class="sect__title">Simple. No subscriptions.</div>
+    <div class="sect__sub">Buy reports one at a time, or lock in lifetime access as a founding member.</div>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="price-card">
+        <div class="price__name">First Report</div>
+        <div class="price__amount">Free</div>
+        <div class="price__period">email required</div>
+        <ul class="price__features">
+          <li class="yes">Full stat analysis</li>
+          <li class="yes">Gauge bars vs GTO</li>
+          <li class="yes">Top 2 leaks identified</li>
+          <li class="yes">GGPoker &amp; PokerStars</li>
+          <li class="no">Position breakdown</li>
+          <li class="no">AI coaching summary</li>
+        </ul>
+        <a href="#get-report" class="price__btn price__btn--secondary">Get Free Report &rarr;</a>
+      </div>
+
+      <!-- Per report — price anchor -->
+      <div class="price-card">
+        <div class="price__name">Per Report</div>
+        <div class="price__amount">$4<span>.99</span></div>
+        <div class="price__period">each additional report</div>
+        <ul class="price__features">
+          <li class="yes">Full stat analysis</li>
+          <li class="yes">All leaks + severity score</li>
+          <li class="yes">Position breakdown</li>
+          <li class="yes">AI coaching summary</li>
+          <li class="yes">Fix drills included</li>
+          <li class="no">Future tools not included</li>
+        </ul>
+        <a href="#get-report" class="price__btn price__btn--secondary">Start with Free</a>
+      </div>
+
+      <!-- Lifetime — highlight -->
+      <div class="price-card price-card--featured">
+        <div class="price__name">Lifetime Deal</div>
+        <div class="price__slash">$99</div>
+        <div class="price__amount">$49</div>
+        <div class="price__period">one-time &mdash; everything, forever</div>
+        <ul class="price__features">
+          <li class="yes">Unlimited Leak Reports</li>
+          <li class="yes">All future tools included</li>
+          <li class="yes">Tournament, HandIQ, Daily Spot</li>
+          <li class="yes">Priority support</li>
+          <li class="yes">Founding member perks</li>
+        </ul>
+        <button class="price__btn price__btn--primary" onclick="handleLTD()">Get Lifetime Access</button>
+        <div class="price__counter">
+          <div class="price__bar"><div class="price__bar-fill" style="width:53%"></div></div>
+          <div class="price__bar-text"><strong>47</strong> of 100 slots remaining</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="trust">
+      <span><span class="dot"></span> 14-day money-back guarantee</span>
+      <span><span class="dot"></span> Secure payment via Stripe</span>
+      <span><span class="dot"></span> Built by a poker player</span>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- Upload Zone -->
+  <section class="sect anim d7" id="get-report">
+    <div class="sect__label">Get Started</div>
+    <div class="sect__title">Upload your hand history.</div>
+    <div class="sect__sub">Drop your .zip file below. We'll analyze it and show you a preview instantly &mdash; no account needed.</div>
+
+    <!-- State 1: Upload -->
+    <div class="upload" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload__icon">&#128194;</div>
+      <div class="upload__title">Drop your .zip here</div>
+      <div class="upload__sub">or click to browse</div>
+      <button class="upload__btn" type="button">Choose File</button>
+      <input type="file" id="file-input" class="upload__input" accept=".zip">
+      <div class="upload__note">GGPoker &amp; PokerStars hand history zip files supported</div>
+    </div>
+
+    <!-- Export Guide -->
+    <div class="export-guide" id="export-guide">
+      <div class="export-toggle" onclick="this.parentElement.classList.toggle('open')">Don't have a .zip file? Here's how to export</div>
+      <div class="export-cards">
+        <div class="export-card">
+          <div class="export-card__site">GGPoker</div>
+          <ol>
+            <li>Go to <strong>PokerCraft</strong> (pokercraft.com or in-app)</li>
+            <li>Select <strong>Hand History</strong> tab</li>
+            <li>Choose date range &amp; game type</li>
+            <li>Click <strong>Download</strong> &mdash; you'll get a .zip file</li>
+          </ol>
+        </div>
+        <div class="export-card">
+          <div class="export-card__site">PokerStars</div>
+          <ol>
+            <li>Open PokerStars desktop client</li>
+            <li>Go to <strong>Settings &rarr; Playing History &rarr; Request Hand History</strong></li>
+            <li>Select date range</li>
+            <li>Check your email &mdash; Stars sends a .zip download link</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 2: Processing -->
+    <div class="processing" id="processing">
+      <div class="processing__spinner"></div>
+      <div class="processing__text">Analyzing your hands...</div>
+      <div class="processing__sub">This usually takes 10-30 seconds</div>
+    </div>
+
+    <!-- State 3: Preview Results -->
+    <div class="results" id="results">
+      <div class="results__banner">Your preview is ready &mdash; enter your email below for the full report.</div>
+
+      <!-- Preview data gets injected here by JS -->
+      <div id="results-content">
+        <!-- Placeholder: will be replaced by actual parsed data -->
+      </div>
+
+      <!-- Email Gate -->
+      <div class="email-gate">
+        <div class="email-gate__title">Get your full report.</div>
+        <div class="email-gate__sub">Enter your email and we'll send you the complete analysis with all positions, every leak with fix drills, and your AI coaching plan.</div>
+        <form class="email-gate__form" onsubmit="handleEmailGate(event)">
+          <input type="email" placeholder="your@email.com" required id="email-gate">
+          <button type="submit">Send Full Report &rarr;</button>
+        </form>
+        <div class="email-gate__note">Free &mdash; no credit card needed. Report sent instantly to your inbox.</div>
+        <div class="email-gate__features">
+          <span><span class="dot"></span> All positions</span>
+          <span><span class="dot"></span> Every leak + fix</span>
+          <span><span class="dot"></span> AI coaching plan</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer__text">&copy; 2026 Poklytics &mdash; Built by a poker player, for poker players.</div>
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  var zone = document.getElementById('upload-zone');
+  var fileInput = document.getElementById('file-input');
+  var processing = document.getElementById('processing');
+  var results = document.getElementById('results');
+
+  // Drag & drop
+  zone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', function() {
+    zone.classList.remove('dragover');
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+
+  // File input change
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.name.endsWith('.zip')) {
+      alert('Please upload a .zip file');
+      return;
+    }
+
+    // Show processing
+    zone.style.display = 'none';
+    processing.classList.add('show');
+
+    // TODO: POST file to /api/analyze
+    // var formData = new FormData();
+    // formData.append('file', file);
+    // fetch('/api/analyze', { method: 'POST', body: formData })
+    //   .then(r => r.json())
+    //   .then(data => showPreview(data))
+    //   .catch(err => { alert('Error: ' + err.message); resetUpload(); });
+
+    // Demo: simulate processing delay
+    setTimeout(function() {
+      processing.classList.remove('show');
+      results.classList.add('show');
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 2000);
+  }
+
+  function resetUpload() {
+    processing.classList.remove('show');
+    results.classList.remove('show');
+    zone.style.display = '';
+    fileInput.value = '';
+  }
+
+  // Make resetUpload accessible
+  window.resetUpload = resetUpload;
+})();
+
+function handleEmailGate(e) {
+  e.preventDefault();
+  var input = document.getElementById('email-gate');
+  var email = input.value;
+  // TODO: POST to /api/free-report { email, sessionId }
+  alert('Full report sent to: ' + email + '\nCheck your inbox!');
+  input.value = '';
+}
+
+function handleLTD() {
+  // TODO: Stripe Checkout
+  alert('Stripe checkout coming soon! Leave your email below to be first in line.');
+  document.getElementById('get-report').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

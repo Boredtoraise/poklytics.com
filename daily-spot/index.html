@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Spot — Poklytics</title>
+<meta name="description" content="One poker spot per day. Analyze it, compare your answer to GTO, and track your study streak. Like Wordle for poker. Coming Q3 2026.">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b0d14;--card:#141620;--border:#1e2035;--text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;--accent:#c8f135;--ok:#4db8ff;--warn:#f59e0b;--purple:#a78bfa;--tool:#22d3ee;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+  body::before{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
+  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}.d4{animation-delay:.35s;}
+
+  .page{max-width:640px;margin:0 auto;padding:0 24px;}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0;position:relative;}
+  .nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+  .nav__brand{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.5px;text-decoration:none;}
+  .nav__brand span{color:var(--accent);}
+
+  .hero{text-align:center;padding:120px 0 60px;position:relative;}
+  .hero::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:400px;background:radial-gradient(ellipse,rgba(34,211,238,.06),transparent 70%);pointer-events:none;}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.58rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--tool);border:1px solid rgba(34,211,238,.2);padding:5px 16px;border-radius:20px;margin-bottom:24px;background:rgba(34,211,238,.06);}
+  .badge::before{content:'';width:5px;height:5px;background:var(--tool);border-radius:50%;animation:pulse 2s infinite;}
+  h1{font-size:2.8rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px;}
+  h1 em{font-style:normal;color:var(--tool);}
+  .sub{font-size:1.05rem;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 40px;}
+
+  .features{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:48px;}
+  .feat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:left;}
+  .feat__icon{font-size:1.2rem;margin-bottom:8px;}
+  .feat__title{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;}
+  .feat__desc{font-size:.78rem;color:var(--text2);line-height:1.5;}
+
+  .cta-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px;text-align:center;}
+  .cta-box h2{font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:8px;}
+  .cta-box p{font-size:.88rem;color:var(--text2);margin-bottom:24px;}
+  .email-form{display:flex;gap:10px;max-width:400px;margin:0 auto;}
+  .email-form input{flex:1;padding:12px 16px;font-family:inherit;font-size:.88rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:#fff;outline:none;}
+  .email-form input:focus{border-color:var(--tool);}
+  .email-form input::placeholder{color:var(--dim);}
+  .email-form button{padding:12px 24px;font-family:inherit;font-size:.88rem;font-weight:700;background:var(--tool);color:#0b0d14;border:none;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap;}
+  .email-form button:hover{box-shadow:0 4px 16px rgba(34,211,238,.3);}
+  .note{font-size:.72rem;color:var(--dim);margin-top:10px;}
+
+  .price-hint{margin-top:24px;font-family:'DM Mono',monospace;font-size:.8rem;color:var(--dim);}
+  .price-hint strong{color:var(--text2);}
+
+  .back{display:block;text-align:center;margin-top:48px;padding-bottom:48px;font-size:.82rem;color:var(--accent);font-weight:600;text-decoration:none;transition:.2s;}
+  .back:hover{text-decoration:underline;text-underline-offset:3px;}
+
+  @media(max-width:640px){h1{font-size:2rem;}.features{grid-template-columns:1fr;}.email-form{flex-direction:column;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav anim d1">
+    <a href="../" class="nav__brand">Pok<span>lytics</span></a>
+  </nav>
+
+  <section class="hero">
+    <div class="badge anim d1">Coming Q3 2026</div>
+    <h1 class="anim d2">Your daily<br><em>poker workout.</em></h1>
+    <p class="sub anim d3">One new GTO spot every day. Answer it, see how you compare to the solver, and keep your study streak alive. Like Wordle — but for poker.</p>
+  </section>
+
+  <div class="features anim d3">
+    <div class="feat">
+      <div class="feat__title">Daily GTO Spot</div>
+      <div class="feat__desc">A fresh solver-verified hand situation drops every day. Never the same spot twice.</div>
+    </div>
+    <div class="feat">
+      <div class="feat__title">Compare to GTO</div>
+      <div class="feat__desc">Submit your answer and instantly see how it stacks up against the solver. Understand the why, not just the what.</div>
+    </div>
+    <div class="feat">
+      <div class="feat__title">Study Streak</div>
+      <div class="feat__desc">Track consecutive days of study. Build the habit. Don't break the chain.</div>
+    </div>
+    <div class="feat">
+      <div class="feat__title">Leaderboard</div>
+      <div class="feat__desc">See how your accuracy ranks against other grinders. Compete, improve, repeat.</div>
+    </div>
+  </div>
+
+  <div class="cta-box anim d4">
+    <h2>Get notified at launch.</h2>
+    <p>Be first in line when Daily Spot goes live. Or grab the Lifetime Deal and get it included from day one.</p>
+    <form class="email-form" onsubmit="handleSubmit(event)">
+      <input type="email" placeholder="your@email.com" required>
+      <button type="submit">Notify Me</button>
+    </form>
+    <div class="note">No spam. Just a launch notification.</div>
+    <div class="price-hint">Expected pricing: <strong>Free</strong> + <strong>$4.99/mo Pro</strong> &mdash; included in <strong>$49 Lifetime Deal</strong></div>
+  </div>
+
+  <a href="../#pricing" class="back anim d4">&larr; Back to Poklytics &mdash; Get Lifetime Access</a>
+</div>
+<script>
+function handleSubmit(e){e.preventDefault();var i=e.target.querySelector('input');alert('Thanks! We\'ll notify you at: '+i.value);i.value='';}
+</script>
+</body>
+</html>
