@@ -7,101 +7,410 @@
 <meta name="description" content="One poker spot per day. Analyze it, compare your answer to GTO, and track your study streak. Like Wordle for poker. Coming Q3 2026.">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0b0d14;--card:#141620;--border:#1e2035;--text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;--accent:#c8f135;--ok:#4db8ff;--warn:#f59e0b;--purple:#a78bfa;--tool:#22d3ee;}
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
-  body::before{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
-  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}.d4{animation-delay:.35s;}
+  :root {
+    --bg:#0b0d14;--card:#141620;--card2:#181b2a;
+    --border:#1e2035;--border-light:#272a42;
+    --text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;
+    --accent:#c8f135;--tool:#22d3ee;
+    --ok:#4db8ff;--warn:#f59e0b;--bad:#ff9500;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  a{color:inherit;text-decoration:none;}
 
-  .page{max-width:640px;margin:0 auto;padding:0 24px;}
+  body::before{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  @keyframes glow{0%,100%{box-shadow:0 0 12px rgba(34,211,238,.25);}50%{box-shadow:0 0 28px rgba(34,211,238,.55);}}
+  @keyframes fireFlicker{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.08);}}
+  @keyframes barFill{from{width:0;}to{width:var(--w);}}
+  @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+
+  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
+  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}.d4{animation-delay:.35s;}.d5{animation-delay:.45s;}.d6{animation-delay:.55s;}.d7{animation-delay:.65s;}
+
+  /* ─── LAYOUT ─── */
+  .page{max-width:680px;margin:0 auto;padding:0 24px;}
+  .mono{font-family:'DM Mono',monospace;}
+
+  /* ─── NAV ─── */
   .nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0;position:relative;}
   .nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
-  .nav__brand{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.5px;text-decoration:none;}
+  .nav__brand{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.5px;}
   .nav__brand span{color:var(--accent);}
+  .nav__tool{font-size:.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tool);font-family:'DM Mono',monospace;}
 
-  .hero{text-align:center;padding:120px 0 60px;position:relative;}
-  .hero::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:400px;background:radial-gradient(ellipse,rgba(34,211,238,.06),transparent 70%);pointer-events:none;}
-  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.58rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--tool);border:1px solid rgba(34,211,238,.2);padding:5px 16px;border-radius:20px;margin-bottom:24px;background:rgba(34,211,238,.06);}
-  .badge::before{content:'';width:5px;height:5px;background:var(--tool);border-radius:50%;animation:pulse 2s infinite;}
-  h1{font-size:2.8rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px;}
-  h1 em{font-style:normal;color:var(--tool);}
-  .sub{font-size:1.05rem;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 40px;}
+  /* ─── HERO ─── */
+  .hero{text-align:center;padding:80px 0 48px;position:relative;}
+  .hero::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:500px;background:radial-gradient(ellipse,rgba(34,211,238,.07),transparent 65%);pointer-events:none;}
 
-  .features{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:48px;}
-  .feat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:left;}
-  .feat__icon{font-size:1.2rem;margin-bottom:8px;}
-  .feat__title{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;}
-  .feat__desc{font-size:.78rem;color:var(--text2);line-height:1.5;}
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:.58rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--tool);border:1px solid rgba(34,211,238,.25);padding:5px 16px;border-radius:20px;margin-bottom:24px;background:rgba(34,211,238,.07);}
+  .badge::before{content:'';width:5px;height:5px;background:var(--tool);border-radius:50%;animation:pulse 1.8s infinite;}
 
-  .cta-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px;text-align:center;}
-  .cta-box h2{font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:8px;}
-  .cta-box p{font-size:.88rem;color:var(--text2);margin-bottom:24px;}
-  .email-form{display:flex;gap:10px;max-width:400px;margin:0 auto;}
-  .email-form input{flex:1;padding:12px 16px;font-family:inherit;font-size:.88rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:#fff;outline:none;}
-  .email-form input:focus{border-color:var(--tool);}
+  .hero h1{font-size:2.9rem;font-weight:800;color:#fff;line-height:1.08;letter-spacing:-1.5px;margin-bottom:16px;}
+  .hero h1 em{font-style:normal;color:var(--tool);}
+  .hero__sub{font-size:1rem;color:var(--text2);line-height:1.72;max-width:480px;margin:0 auto 12px;}
+  .hero__tag-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:600;letter-spacing:.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--border-light);color:var(--text2);background:var(--card);}
+  .pill--cyan{border-color:rgba(34,211,238,.2);color:var(--tool);background:rgba(34,211,238,.05);}
+  .pill--lime{border-color:rgba(200,241,53,.2);color:var(--accent);background:rgba(200,241,53,.05);}
+
+  /* ─── GAME CARD ─── */
+  .game-wrap{position:relative;margin:48px 0;}
+  .game-wrap::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:480px;height:320px;background:radial-gradient(ellipse,rgba(34,211,238,.06),transparent 70%);pointer-events:none;}
+
+  .game-label{font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace;text-align:center;margin-bottom:12px;}
+
+  .game-card{background:var(--card);border:1px solid var(--border-light);border-radius:20px;overflow:hidden;position:relative;}
+  .game-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--tool),transparent);}
+
+  /* card header */
+  .gc-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);}
+  .gc-head__left{display:flex;align-items:center;gap:10px;}
+  .gc-spot-num{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;color:var(--dim);background:rgba(255,255,255,.04);padding:3px 10px;border-radius:6px;border:1px solid var(--border);}
+  .gc-day{font-size:.72rem;font-weight:700;color:var(--tool);}
+  .gc-head__right{display:flex;align-items:center;gap:6px;}
+  .streak-badge{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;color:#fff;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2);padding:4px 12px;border-radius:8px;}
+  .streak-fire{display:inline-block;animation:fireFlicker 1.4s ease-in-out infinite;}
+
+  /* scenario */
+  .gc-scenario{padding:20px 22px 16px;}
+  .gc-scenario__label{font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+  .gc-table-info{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .table-chip{font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid var(--border);color:var(--text2);background:rgba(255,255,255,.03);font-family:'DM Mono',monospace;}
+  .table-chip--pos{border-color:rgba(34,211,238,.2);color:var(--tool);}
+  .gc-hand{font-family:'DM Mono',monospace;font-size:1.6rem;font-weight:500;color:#fff;margin-bottom:10px;letter-spacing:2px;}
+  .gc-hand .s-h{color:#4db8ff;}.gc-hand .s-d{color:#22d3ee;}.gc-hand .s-c{color:#a78bfa;}.gc-hand .s-s{color:#9ca3b8;}
+  .gc-prompt{font-size:.88rem;color:var(--text2);line-height:1.55;}
+  .gc-prompt strong{color:#fff;font-weight:600;}
+
+  /* action buttons */
+  .gc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 22px 20px;}
+  .action-btn{padding:12px 8px;border-radius:10px;font-family:inherit;font-size:.8rem;font-weight:700;cursor:default;border:1px solid var(--border);background:var(--card2);color:var(--text2);text-align:center;transition:.2s;position:relative;}
+  .action-btn--selected{border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08);color:var(--tool);}
+  .action-btn--selected::after{content:'✓';position:absolute;top:7px;right:10px;font-size:.65rem;opacity:.7;}
+
+  /* result reveal */
+  .gc-result{margin:0 22px 20px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .gc-result__label{font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+  .freq-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .freq-row:last-child{margin-bottom:0;}
+  .freq-action{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text2);width:106px;flex-shrink:0;}
+  .freq-action--top{color:#fff;font-weight:500;}
+  .freq-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;}
+  .freq-bar{height:100%;border-radius:4px;animation:barFill .8s .4s ease-out both;}
+  .freq-bar--top{background:var(--tool);}
+  .freq-bar--mid{background:var(--ok);}
+  .freq-bar--low{background:var(--dim);}
+  .freq-pct{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--dim);width:30px;text-align:right;flex-shrink:0;}
+  .freq-pct--top{color:var(--tool);}
+
+  /* score chip */
+  .gc-score{display:flex;align-items:center;justify-content:space-between;padding:0 22px 20px;}
+  .score-chip{font-family:'DM Mono',monospace;font-size:.75rem;padding:6px 14px;border-radius:8px;border:1px solid rgba(245,158,11,.2);background:rgba(245,158,11,.07);color:var(--warn);}
+  .score-note{font-size:.72rem;color:var(--dim);}
+
+  /* calendar */
+  .gc-calendar{padding:0 22px 22px;}
+  .gc-calendar__label{font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+  .cal-grid{display:flex;gap:4px;flex-wrap:wrap;}
+  .cal-day{width:18px;height:18px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);}
+  .cal-day--done{background:rgba(34,211,238,.25);border-color:rgba(34,211,238,.3);}
+  .cal-day--today{background:var(--tool);border-color:var(--tool);box-shadow:0 0 8px rgba(34,211,238,.5);}
+  .cal-day--miss{background:rgba(255,149,0,.12);border-color:rgba(255,149,0,.2);}
+
+  /* ─── STATS ROW ─── */
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:48px 0;}
+  .stat-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 16px;text-align:center;position:relative;overflow:hidden;}
+  .stat-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--tool),transparent);opacity:.5;}
+  .stat-num{font-family:'DM Mono',monospace;font-size:2rem;font-weight:500;color:var(--tool);line-height:1;margin-bottom:6px;}
+  .stat-label{font-size:.72rem;color:var(--text2);line-height:1.4;}
+
+  /* ─── FEATURES ─── */
+  .features-label{font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace;margin-bottom:20px;}
+  .features-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;-ms-overflow-style:none;scrollbar-width:none;margin:0 -24px;padding-left:24px;padding-right:24px;}
+  .features-scroll::-webkit-scrollbar{display:none;}
+  .feat-card{flex-shrink:0;width:200px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 18px;}
+  .feat-card__icon{font-size:1.4rem;margin-bottom:10px;}
+  .feat-card__title{font-size:.85rem;font-weight:700;color:#fff;margin-bottom:5px;}
+  .feat-card__desc{font-size:.75rem;color:var(--text2);line-height:1.55;}
+  .feat-card--cyan{border-color:rgba(34,211,238,.2);}
+  .feat-card--cyan .feat-card__title{color:var(--tool);}
+
+  /* ─── PRO DIFF ─── */
+  .pro-diff{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin:32px 0;}
+  .pro-diff__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .pro-diff__title{font-size:.88rem;font-weight:700;color:#fff;}
+  .pro-tag{font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);background:rgba(200,241,53,.08);border:1px solid rgba(200,241,53,.2);padding:3px 10px;border-radius:6px;}
+  .pro-rows{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .pro-row{display:flex;align-items:center;gap:8px;font-size:.78rem;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.025);}
+  .pro-row__dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .pro-row__dot--free{background:var(--dim);}
+  .pro-row__dot--pro{background:var(--tool);}
+  .pro-row__text{color:var(--text2);}
+  .pro-row--pro .pro-row__text{color:#fff;}
+
+  /* ─── CTA ─── */
+  .cta-box{background:var(--card);border:1px solid var(--border-light);border-radius:20px;padding:36px 32px;text-align:center;position:relative;overflow:hidden;margin-bottom:48px;}
+  .cta-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--tool),transparent);}
+  .cta-box::after{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:400px;height:280px;background:radial-gradient(ellipse,rgba(34,211,238,.04),transparent 65%);pointer-events:none;}
+  .cta-box h2{font-size:1.35rem;font-weight:800;color:#fff;margin-bottom:8px;position:relative;}
+  .cta-box p{font-size:.88rem;color:var(--text2);margin-bottom:28px;line-height:1.65;position:relative;}
+  .email-form{display:flex;gap:10px;max-width:420px;margin:0 auto;position:relative;}
+  .email-form input{flex:1;padding:13px 16px;font-family:inherit;font-size:.88rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:#fff;outline:none;transition:.2s;}
+  .email-form input:focus{border-color:var(--tool);box-shadow:0 0 0 3px rgba(34,211,238,.08);}
   .email-form input::placeholder{color:var(--dim);}
-  .email-form button{padding:12px 24px;font-family:inherit;font-size:.88rem;font-weight:700;background:var(--tool);color:#0b0d14;border:none;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap;}
-  .email-form button:hover{box-shadow:0 4px 16px rgba(34,211,238,.3);}
-  .note{font-size:.72rem;color:var(--dim);margin-top:10px;}
+  .email-form button{padding:13px 22px;font-family:inherit;font-size:.85rem;font-weight:700;background:var(--tool);color:#0b0d14;border:none;border-radius:10px;cursor:pointer;transition:.2s;white-space:nowrap;}
+  .email-form button:hover{box-shadow:0 4px 20px rgba(34,211,238,.35);transform:translateY(-1px);}
+  .note{font-size:.72rem;color:var(--dim);margin-top:10px;position:relative;}
+  .price-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:20px;position:relative;}
+  .price-chip{font-family:'DM Mono',monospace;font-size:.75rem;padding:6px 14px;border-radius:8px;border:1px solid var(--border);color:var(--text2);background:rgba(255,255,255,.03);}
+  .price-chip--ltd{border-color:rgba(200,241,53,.25);color:var(--accent);background:rgba(200,241,53,.06);}
 
-  .price-hint{margin-top:24px;font-family:'DM Mono',monospace;font-size:.8rem;color:var(--dim);}
-  .price-hint strong{color:var(--text2);}
+  /* ─── BACK ─── */
+  .back{display:block;text-align:center;padding-bottom:52px;font-size:.82rem;color:var(--tool);font-weight:600;transition:.2s;}
+  .back:hover{color:#fff;}
 
-  .back{display:block;text-align:center;margin-top:48px;padding-bottom:48px;font-size:.82rem;color:var(--accent);font-weight:600;text-decoration:none;transition:.2s;}
-  .back:hover{text-decoration:underline;text-underline-offset:3px;}
-
-  @media(max-width:640px){h1{font-size:2rem;}.features{grid-template-columns:1fr;}.email-form{flex-direction:column;}}
+  /* ─── MOBILE ─── */
+  @media(max-width:580px){
+    .hero h1{font-size:2.1rem;}
+    .stats-row{grid-template-columns:1fr 1fr;}
+    .stats-row .stat-box:last-child{grid-column:span 2;}
+    .pro-rows{grid-template-columns:1fr;}
+    .email-form{flex-direction:column;}
+    .gc-actions{grid-template-columns:1fr 1fr;}
+  }
 </style>
 </head>
 <body>
 <div class="page">
+
+  <!-- NAV -->
   <nav class="nav anim d1">
     <a href="../" class="nav__brand">Pok<span>lytics</span></a>
+    <span class="nav__tool">Daily Spot</span>
   </nav>
 
+  <!-- HERO -->
   <section class="hero">
     <div class="badge anim d1">Coming Q3 2026</div>
     <h1 class="anim d2">Your daily<br><em>poker workout.</em></h1>
-    <p class="sub anim d3">One new GTO spot every day. Answer it, see how you compare to the solver, and keep your study streak alive. Like Wordle — but for poker.</p>
+    <p class="hero__sub anim d3">One solver-verified spot every day. Answer it, see the GTO breakdown, and don't break the chain. <strong style="color:#fff;">Like Wordle — but your stack actually matters.</strong></p>
+    <div class="hero__tag-row anim d4">
+      <span class="pill pill--cyan">🔥 Streak-based</span>
+      <span class="pill pill--cyan">GTO verified</span>
+      <span class="pill pill--lime">1 min/day</span>
+      <span class="pill">Free forever</span>
+    </div>
   </section>
 
-  <div class="features anim d3">
-    <div class="feat">
-      <div class="feat__title">Daily GTO Spot</div>
-      <div class="feat__desc">A fresh solver-verified hand situation drops every day. Never the same spot twice.</div>
-    </div>
-    <div class="feat">
-      <div class="feat__title">Compare to GTO</div>
-      <div class="feat__desc">Submit your answer and instantly see how it stacks up against the solver. Understand the why, not just the what.</div>
-    </div>
-    <div class="feat">
-      <div class="feat__title">Study Streak</div>
-      <div class="feat__desc">Track consecutive days of study. Build the habit. Don't break the chain.</div>
-    </div>
-    <div class="feat">
-      <div class="feat__title">Leaderboard</div>
-      <div class="feat__desc">See how your accuracy ranks against other grinders. Compete, improve, repeat.</div>
+  <!-- GAME MOCKUP -->
+  <div class="game-wrap anim d4">
+    <div class="game-label">— Preview mockup —</div>
+    <div class="game-card">
+      <!-- Header -->
+      <div class="gc-head">
+        <div class="gc-head__left">
+          <span class="gc-spot-num">#142</span>
+          <span class="gc-day">Today's Spot</span>
+        </div>
+        <div class="gc-head__right">
+          <div class="streak-badge">
+            <span class="streak-fire">🔥</span>
+            <span>12 day streak</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scenario -->
+      <div class="gc-scenario">
+        <div class="gc-scenario__label">Your situation</div>
+        <div class="gc-table-info">
+          <span class="table-chip">6-max NL100</span>
+          <span class="table-chip table-chip--pos">BTN</span>
+          <span class="table-chip">CO raises 2.5x</span>
+          <span class="table-chip">100BB eff.</span>
+        </div>
+        <div class="gc-hand">
+          J<span class="s-h">♥</span> 9<span class="s-h">♥</span>
+        </div>
+        <p class="gc-prompt">CO opens to 2.5BB. Folds to you on the <strong>Button</strong>. What's your action?</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="gc-actions">
+        <div class="action-btn">Fold</div>
+        <div class="action-btn action-btn--selected">Call</div>
+        <div class="action-btn">3-Bet Small (9x)</div>
+        <div class="action-btn">3-Bet Large (13x)</div>
+      </div>
+
+      <!-- Result Reveal -->
+      <div class="gc-result">
+        <div class="gc-result__label">GTO solution</div>
+        <div class="freq-row">
+          <span class="freq-action freq-action--top mono">3-Bet Small</span>
+          <div class="freq-bar-wrap"><div class="freq-bar freq-bar--top" style="--w:42%;width:42%;"></div></div>
+          <span class="freq-pct freq-pct--top">42%</span>
+        </div>
+        <div class="freq-row">
+          <span class="freq-action mono">Call</span>
+          <div class="freq-bar-wrap"><div class="freq-bar freq-bar--mid" style="--w:38%;width:38%;"></div></div>
+          <span class="freq-pct">38%</span>
+        </div>
+        <div class="freq-row">
+          <span class="freq-action mono">Fold</span>
+          <div class="freq-bar-wrap"><div class="freq-bar freq-bar--low" style="--w:20%;width:20%;"></div></div>
+          <span class="freq-pct">20%</span>
+        </div>
+      </div>
+
+      <!-- Score + note -->
+      <div class="gc-score">
+        <span class="score-chip">+74 pts — Close, but 3-Bet was the play</span>
+        <span class="score-note">Avg today: 61 pts</span>
+      </div>
+
+      <!-- Calendar strip -->
+      <div class="gc-calendar">
+        <div class="gc-calendar__label">March 2026 — Study streak</div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
     </div>
   </div>
 
-  <div class="cta-box anim d4">
+  <!-- STATS ROW -->
+  <div class="stats-row anim d5">
+    <div class="stat-box">
+      <div class="stat-num">365</div>
+      <div class="stat-label">Unique spots<br>per year</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">~60s</div>
+      <div class="stat-label">Average time<br>per session</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Streak to<br>protect</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="anim d5" style="margin-bottom:48px;">
+    <div class="features-label">What you get</div>
+    <div class="features-scroll">
+      <div class="feat-card feat-card--cyan">
+        <div class="feat-card__icon">🎯</div>
+        <div class="feat-card__title">One spot. Every day.</div>
+        <div class="feat-card__desc">Solver-verified hand from a real spot library. Covers every position, stack depth, and board texture.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card__icon">📊</div>
+        <div class="feat-card__title">GTO Breakdown</div>
+        <div class="feat-card__desc">Frequency bars for every action. Understand <em>why</em> GTO plays what it does, not just what.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card__icon">🔥</div>
+        <div class="feat-card__title">Study Streak</div>
+        <div class="feat-card__desc">Visual chain of consecutive days. The psychology of "don't break it" is a real habit engine.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card__icon">🏆</div>
+        <div class="feat-card__title">Daily Leaderboard</div>
+        <div class="feat-card__desc">See how your score stacks up against everyone who played today. Updated live at midnight.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card__icon">🧠</div>
+        <div class="feat-card__title">Accuracy Over Time</div>
+        <div class="feat-card__desc">Track your EV deviation score across weeks. Watch your mistakes shrink as study compounds.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card__icon">📚</div>
+        <div class="feat-card__title">Spot Archive (Pro)</div>
+        <div class="feat-card__desc">Replay every past spot. Filter by position, action type, or your worst mistakes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FREE vs PRO -->
+  <div class="pro-diff anim d5">
+    <div class="pro-diff__head">
+      <span class="pro-diff__title">Free vs Pro</span>
+      <span class="pro-tag">Included in $49 LTD</span>
+    </div>
+    <div class="pro-rows">
+      <div class="pro-row">
+        <span class="pro-row__dot pro-row__dot--free"></span>
+        <span class="pro-row__text">Daily spot — Free</span>
+      </div>
+      <div class="pro-row pro-row--pro">
+        <span class="pro-row__dot pro-row__dot--pro"></span>
+        <span class="pro-row__text">Full spot archive</span>
+      </div>
+      <div class="pro-row">
+        <span class="pro-row__dot pro-row__dot--free"></span>
+        <span class="pro-row__text">Streak tracking — Free</span>
+      </div>
+      <div class="pro-row pro-row--pro">
+        <span class="pro-row__dot pro-row__dot--pro"></span>
+        <span class="pro-row__text">Accuracy trends</span>
+      </div>
+      <div class="pro-row">
+        <span class="pro-row__dot pro-row__dot--free"></span>
+        <span class="pro-row__text">Daily score — Free</span>
+      </div>
+      <div class="pro-row pro-row--pro">
+        <span class="pro-row__dot pro-row__dot--pro"></span>
+        <span class="pro-row__text">Leaderboard ranking</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box anim d6">
     <h2>Get notified at launch.</h2>
-    <p>Be first in line when Daily Spot goes live. Or grab the Lifetime Deal and get it included from day one.</p>
+    <p>Be first in line when Daily Spot goes live in Q3 2026. Or grab the Poklytics Lifetime Deal and get it included from day one — forever.</p>
     <form class="email-form" onsubmit="handleSubmit(event)">
       <input type="email" placeholder="your@email.com" required>
       <button type="submit">Notify Me</button>
     </form>
-    <div class="note">No spam. Just a launch notification.</div>
-    <div class="price-hint">Expected pricing: <strong>Free</strong> + <strong>$4.99/mo Pro</strong> &mdash; included in <strong>$49 Lifetime Deal</strong></div>
+    <div class="note">No spam. One email when we launch.</div>
+    <div class="price-row">
+      <span class="price-chip">Free tier available</span>
+      <span class="price-chip">$4.99 / mo Pro</span>
+      <span class="price-chip price-chip--ltd">$49 Lifetime Deal — includes all tools</span>
+    </div>
   </div>
 
-  <a href="../#pricing" class="back anim d4">&larr; Back to Poklytics &mdash; Get Lifetime Access</a>
+  <a href="../#pricing" class="back anim d7">← Back to Poklytics — View Lifetime Deal</a>
 </div>
+
 <script>
-function handleSubmit(e){e.preventDefault();var i=e.target.querySelector('input');alert('Thanks! We\'ll notify you at: '+i.value);i.value='';}
+// Calendar grid — 31 days, days 1–12 = done, day 13 = today, day 22 = miss, rest = empty
+(function(){
+  var grid = document.getElementById('calGrid');
+  for(var i=1;i<=31;i++){
+    var d = document.createElement('div');
+    d.className = 'cal-day';
+    if(i<13) d.classList.add('cal-day--done');
+    else if(i===13) d.classList.add('cal-day--today');
+    else if(i===22) d.classList.add('cal-day--miss');
+    d.title = 'Mar ' + i;
+    grid.appendChild(d);
+  }
+})();
+
+function handleSubmit(e){
+  e.preventDefault();
+  var i=e.target.querySelector('input');
+  var btn=e.target.querySelector('button');
+  btn.textContent='✓ Saved';
+  btn.style.background='var(--ok)';
+  setTimeout(function(){btn.textContent='Notify Me';btn.style.background='var(--tool)';},2500);
+  i.value='';
+}
 </script>
 </body>
 </html>

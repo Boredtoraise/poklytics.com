@@ -94,22 +94,34 @@
   .tool::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);transition:.3s;}
   .tool:hover{border-color:var(--border-light);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3);}
 
-  .tool--live{border-color:rgba(200,241,53,.2);}
-  .tool--live::before{background:linear-gradient(90deg,var(--accent),rgba(200,241,53,.3));}
-  .tool--live:hover{border-color:rgba(200,241,53,.3);}
+  /* Tool-specific colors */
+  .tool--orange{border-color:rgba(245,158,11,.2);}
+  .tool--orange::before{background:linear-gradient(90deg,var(--warn),rgba(245,158,11,.3));}
+  .tool--orange:hover{border-color:rgba(245,158,11,.3);}
+  .tool--blue{border-color:rgba(59,130,246,.2);}
+  .tool--blue::before{background:linear-gradient(90deg,var(--blue),rgba(59,130,246,.3));}
+  .tool--blue:hover{border-color:rgba(59,130,246,.3);}
+  .tool--purple{border-color:rgba(167,139,250,.2);}
+  .tool--purple::before{background:linear-gradient(90deg,var(--purple),rgba(167,139,250,.3));}
+  .tool--purple:hover{border-color:rgba(167,139,250,.3);}
+  .tool--cyan{border-color:rgba(34,211,238,.2);}
+  .tool--cyan::before{background:linear-gradient(90deg,#22d3ee,rgba(34,211,238,.3));}
+  .tool--cyan:hover{border-color:rgba(34,211,238,.3);}
 
   .tool__badge{display:inline-flex;align-items:center;gap:5px;font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:16px;}
-  .badge--live{background:rgba(200,241,53,.1);color:var(--accent);border:1px solid rgba(200,241,53,.15);}
-  .badge--live::before{content:'';width:5px;height:5px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
-  .badge--soon{background:rgba(85,90,112,.1);color:var(--dim);border:1px solid rgba(85,90,112,.15);}
+  .badge--orange{background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.15);}
+  .badge--orange::before{content:'';width:5px;height:5px;background:var(--warn);border-radius:50%;animation:pulse 2s infinite;}
+  .badge--blue{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.15);}
+  .badge--purple{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.15);}
+  .badge--cyan{background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.15);}
 
   .tool__name{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:8px;letter-spacing:-.02em;}
   .tool__desc{font-size:.84rem;color:var(--text2);line-height:1.65;margin-bottom:18px;}
   .tool__price{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--dim);margin-bottom:16px;}
 
   .tool__cta{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;font-family:inherit;font-size:.8rem;font-weight:700;border-radius:8px;cursor:pointer;transition:.2s;border:none;}
-  .cta--live{background:var(--accent);color:#0b0d14;}
-  .cta--live:hover{box-shadow:0 4px 16px rgba(200,241,53,.25);}
+  .cta--live{background:var(--warn);color:#0b0d14;}
+  .cta--live:hover{box-shadow:0 4px 16px rgba(245,158,11,.3);}
   .cta--soon{background:transparent;color:var(--dim);border:1px solid var(--border);}
   .cta--soon:hover{border-color:var(--text2);color:var(--text2);}
 
@@ -294,29 +306,29 @@
     <div class="sect__sub">One toolkit. Multiple tools. Each designed to find a specific edge in your game.</div>
 
     <div class="tools">
-      <div class="tool tool--live">
-        <div class="tool__badge badge--live">Live Now</div>
+      <div class="tool tool--orange">
+        <div class="tool__badge badge--orange">Live Now</div>
         <div class="tool__name">Leak Report</div>
         <div class="tool__desc">Upload your hand history. Get a full stat breakdown with gauge bars vs GTO, leak detection with severity scoring, and AI coaching tips.</div>
         <div class="tool__price">First report free &bull; $4.99 per report</div>
         <a href="leak-report/" class="tool__cta cta--live">Get Free Report &rarr;</a>
       </div>
-      <div class="tool">
-        <div class="tool__badge badge--soon">Coming Q2</div>
+      <div class="tool tool--blue">
+        <div class="tool__badge badge--blue">Coming Q2</div>
         <div class="tool__name">Tournament Report</div>
         <div class="tool__desc">Analyze your tournament results &mdash; ROI by stake, format breakdown, profit heatmap, bubble rate, and session timing insights.</div>
         <div class="tool__price">$4.99 per report</div>
         <a href="tournament-report/" class="tool__cta cta--soon">Learn More</a>
       </div>
-      <div class="tool">
-        <div class="tool__badge badge--soon">Coming Q3</div>
+      <div class="tool tool--purple">
+        <div class="tool__badge badge--purple">Coming Q3</div>
         <div class="tool__name">HandIQ</div>
         <div class="tool__desc">Deep hand-by-hand analysis. Spot your most costly mistakes, find patterns across thousands of hands, and get personalized study plans.</div>
         <div class="tool__price">$19.99/month</div>
         <a href="handiq/" class="tool__cta cta--soon">Learn More</a>
       </div>
-      <div class="tool">
-        <div class="tool__badge badge--soon">Coming Q3</div>
+      <div class="tool tool--cyan">
+        <div class="tool__badge badge--cyan">Coming Q3</div>
         <div class="tool__name">Daily Spot</div>
         <div class="tool__desc">One poker spot per day. Analyze it, compare your answer to GTO, and track your study streak. Like Wordle for poker.</div>
         <div class="tool__price">Free &bull; $4.99/mo pro</div>

@@ -3,105 +3,387 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HandIQ — Poklytics</title>
-<meta name="description" content="Deep hand-by-hand AI analysis. Spot costly mistakes, find patterns, get personalized study plans. Coming Q3 2026.">
+<title>HandIQ — Deep Hand Analysis · Poklytics</title>
+<meta name="description" content="Deep hand-by-hand AI analysis. Spot your most costly mistakes, find patterns across thousands of hands, and get personalized study plans. Coming Q3 2026.">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0b0d14;--card:#141620;--border:#1e2035;--text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;--accent:#c8f135;--ok:#4db8ff;--warn:#f59e0b;--purple:#a78bfa;}
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
-  body::before{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
-  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}.d4{animation-delay:.35s;}
+  :root {
+    --bg:#0b0d14;--bg2:#10121a;--card:#141620;--card-elevated:#181b2a;
+    --border:#1e2035;--border-light:#272a42;
+    --text:#e4e4ec;--text2:#9ca3b8;--dim:#555a70;
+    --accent:#c8f135;
+    --ok:#4db8ff;--warn:#f59e0b;--bad:#ff9500;
+    --purple:#a78bfa;--purple-dim:rgba(167,139,250,.12);--purple-border:rgba(167,139,250,.22);
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
 
-  .page{max-width:640px;margin:0 auto;padding:0 24px;}
+  body::before{content:'';position:fixed;inset:0;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:999;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  @keyframes slideRight{from{width:0;}to{width:var(--bar-w);}}
+  @keyframes tickIn{from{opacity:0;transform:scale(.5);}to{opacity:1;transform:scale(1);}}
+  @keyframes scanLine{0%{transform:translateY(-100%);}100%{transform:translateY(400%);}}
+
+  .anim{opacity:0;animation:fadeUp .6s ease-out forwards;}
+  .d1{animation-delay:.05s;}.d2{animation-delay:.15s;}.d3{animation-delay:.25s;}
+  .d4{animation-delay:.35s;}.d5{animation-delay:.45s;}.d6{animation-delay:.55s;}
+
+  .mono{font-family:'DM Mono',monospace;}
+  .page{max-width:720px;margin:0 auto;padding:0 24px;}
+
+  /* ── NAV ── */
   .nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0;position:relative;}
   .nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
-  .nav__brand{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.5px;text-decoration:none;}
+  .nav__brand{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.5px;}
   .nav__brand span{color:var(--accent);}
+  .nav__tool{font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--purple);font-family:'DM Mono',monospace;}
 
-  .hero{text-align:center;padding:120px 0 60px;position:relative;}
-  .hero::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:400px;background:radial-gradient(ellipse,rgba(167,139,250,.06),transparent 70%);pointer-events:none;}
-  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.58rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--purple);border:1px solid rgba(167,139,250,.2);padding:5px 16px;border-radius:20px;margin-bottom:24px;background:rgba(167,139,250,.06);}
+  /* ── HERO ── */
+  .hero{padding:80px 0 56px;position:relative;text-align:center;}
+  .hero__glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:500px;background:radial-gradient(ellipse at center,rgba(167,139,250,.07) 0%,transparent 65%);pointer-events:none;}
+
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:.58rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--purple);border:1px solid var(--purple-border);padding:5px 16px;border-radius:20px;margin-bottom:28px;background:var(--purple-dim);}
   .badge::before{content:'';width:5px;height:5px;background:var(--purple);border-radius:50%;animation:pulse 2s infinite;}
-  h1{font-size:2.8rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px;}
-  h1 em{font-style:normal;color:var(--purple);}
-  .sub{font-size:1.05rem;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 40px;}
 
-  .features{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:48px;}
-  .feat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:left;}
-  .feat__icon{font-size:1.2rem;margin-bottom:8px;}
-  .feat__title{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;}
-  .feat__desc{font-size:.78rem;color:var(--text2);line-height:1.5;}
+  .hero h1{font-size:3.2rem;font-weight:800;color:#fff;line-height:1.08;letter-spacing:-1.8px;margin-bottom:18px;}
+  .hero h1 em{font-style:normal;color:var(--purple);}
+  .hero__sub{font-size:1rem;color:var(--text2);max-width:500px;margin:0 auto 16px;line-height:1.75;}
+  .hero__meta{display:flex;align-items:center;justify-content:center;gap:20px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--dim);margin-bottom:0;}
+  .hero__meta .sep{opacity:.3;}
 
-  .cta-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px;text-align:center;}
-  .cta-box h2{font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:8px;}
-  .cta-box p{font-size:.88rem;color:var(--text2);margin-bottom:24px;}
-  .email-form{display:flex;gap:10px;max-width:400px;margin:0 auto;}
-  .email-form input{flex:1;padding:12px 16px;font-family:inherit;font-size:.88rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:#fff;outline:none;}
+  /* ── MOCKUP ── */
+  .mockup-wrap{margin:52px 0;position:relative;}
+  .mockup-wrap::before{content:'HAND REVIEW';position:absolute;top:-10px;left:24px;font-family:'DM Mono',monospace;font-size:.55rem;font-weight:500;letter-spacing:3px;color:var(--dim);background:var(--bg);padding:0 8px;z-index:2;}
+  .mockup{background:var(--card);border:1px solid var(--purple-border);border-radius:18px;overflow:hidden;position:relative;box-shadow:0 0 60px rgba(167,139,250,.06),0 24px 60px rgba(0,0,0,.4);}
+
+  /* scan line effect */
+  .mockup__scan{position:absolute;left:0;right:0;height:60px;background:linear-gradient(180deg,transparent,rgba(167,139,250,.03),transparent);animation:scanLine 4s linear infinite;pointer-events:none;z-index:1;}
+
+  .mockup__header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(167,139,250,.04);border-bottom:1px solid var(--border);position:relative;z-index:2;}
+  .mockup__dot-row{display:flex;gap:6px;}
+  .mockup__dot{width:9px;height:9px;border-radius:50%;}
+  .mockup__dot:nth-child(1){background:#ff9500;opacity:.7;}
+  .mockup__dot:nth-child(2){background:#f59e0b;opacity:.7;}
+  .mockup__dot:nth-child(3){background:#4db8ff;opacity:.7;}
+  .mockup__title-bar{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--dim);letter-spacing:1px;}
+  .mockup__badge-live{font-size:.52rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--purple);border:1px solid var(--purple-border);padding:3px 10px;border-radius:10px;background:var(--purple-dim);}
+
+  .mockup__body{padding:24px 24px 20px;position:relative;z-index:2;}
+
+  /* Hand scenario */
+  .hand-meta{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;}
+  .hand-scenario{flex:1;}
+  .hand-label{font-size:.58rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;}
+  .hand-title{font-size:1.05rem;font-weight:700;color:#fff;letter-spacing:-.3px;margin-bottom:4px;}
+  .hand-cards{display:inline-flex;gap:4px;margin-bottom:8px;}
+  .card{display:inline-flex;align-items:center;justify-content:center;width:32px;height:44px;border-radius:5px;font-family:'DM Mono',monospace;font-size:.8rem;font-weight:500;border:1px solid rgba(255,255,255,.12);}
+  .card--A{background:#1e2035;color:#fff;}
+  .card--K{background:#1e2035;color:#fff;}
+  .card--heart{color:#f87171;}
+  .card--spade{color:#e4e4ec;}
+  .hand-pos{font-size:.72rem;color:var(--text2);font-family:'DM Mono',monospace;}
+  .hand-pos span{color:var(--ok);}
+
+  .hand-pot{text-align:right;}
+  .pot-label{font-size:.58rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:4px;}
+  .pot-value{font-family:'DM Mono',monospace;font-size:1.2rem;font-weight:500;color:var(--accent);}
+  .pot-sub{font-size:.65rem;color:var(--dim);font-family:'DM Mono',monospace;margin-top:2px;}
+
+  /* Decision tree */
+  .decision-label{font-size:.58rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+  .decisions{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+  .decision-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);position:relative;overflow:hidden;transition:.2s;}
+  .decision-row--optimal{border-color:var(--purple-border);background:rgba(167,139,250,.05);}
+  .decision-row--chosen{border-color:rgba(255,149,0,.2);background:rgba(255,149,0,.04);}
+  .decision-row__bar{position:absolute;left:0;top:0;bottom:0;border-radius:10px 0 0 10px;opacity:.08;}
+  .decision-row--optimal .decision-row__bar{background:var(--purple);}
+  .decision-row--mid .decision-row__bar{background:var(--ok);}
+  .decision-row--chosen .decision-row__bar{background:var(--bad);}
+  .decision-action{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:500;color:var(--text2);width:60px;flex-shrink:0;}
+  .decision-row--optimal .decision-action{color:var(--purple);}
+  .decision-ev-bar-wrap{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .decision-ev-bar{height:100%;border-radius:2px;animation:slideRight .8s .5s ease-out both;}
+  .decision-row--optimal .decision-ev-bar{background:var(--purple);--bar-w:100%;}
+  .decision-row--mid .decision-ev-bar{background:var(--ok);--bar-w:35%;}
+  .decision-row--chosen .decision-ev-bar{background:var(--bad);--bar-w:0%;}
+  .decision-ev{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;text-align:right;width:80px;flex-shrink:0;}
+  .decision-row--optimal .decision-ev{color:var(--purple);}
+  .decision-row--mid .decision-ev{color:var(--ok);}
+  .decision-row--chosen .decision-ev{color:var(--bad);}
+  .decision-check{font-size:.65rem;margin-left:4px;animation:tickIn .4s .9s ease-out both;opacity:0;}
+
+  /* Verdict */
+  .verdict{background:rgba(167,139,250,.06);border:1px solid var(--purple-border);border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;}
+  .verdict__icon{font-size:.9rem;margin-top:1px;flex-shrink:0;}
+  .verdict__text{flex:1;}
+  .verdict__line1{font-size:.78rem;color:var(--text2);margin-bottom:3px;}
+  .verdict__line1 strong{color:#fff;}
+  .verdict__line2{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--bad);}
+  .verdict__line2 span{color:var(--purple);}
+
+  .mockup__footer{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--border);background:rgba(0,0,0,.15);}
+  .mockup__footer-stat{text-align:center;}
+  .mockup__footer-stat .val{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:500;color:#fff;display:block;}
+  .mockup__footer-stat .lbl{font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-top:1px;display:block;}
+  .mockup__footer-stat.neg .val{color:var(--bad);}
+  .mockup__footer-stat.pos .val{color:var(--ok);}
+  .mockup__footer-divider{width:1px;height:28px;background:var(--border);}
+
+  .mockup__caption{text-align:center;font-size:.7rem;color:var(--dim);margin-top:14px;font-family:'DM Mono',monospace;}
+
+  /* ── FEATURES — vertical blocks ── */
+  .features-section{padding:16px 0 64px;}
+  .features-heading{margin-bottom:40px;}
+  .features-heading__label{font-size:.58rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--purple);margin-bottom:8px;}
+  .features-heading__title{font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.2;}
+  .features-heading__sub{font-size:.9rem;color:var(--text2);margin-top:10px;max-width:460px;line-height:1.7;}
+
+  .feat-list{display:flex;flex-direction:column;gap:0;}
+  .feat-item{display:flex;gap:24px;padding:28px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+  .feat-item:last-child{border-bottom:none;}
+  .feat-num{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--purple);opacity:.6;width:24px;flex-shrink:0;padding-top:3px;}
+  .feat-body{flex:1;}
+  .feat-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-.2px;}
+  .feat-desc{font-size:.85rem;color:var(--text2);line-height:1.7;}
+  .feat-tag{display:inline-flex;align-items:center;gap:5px;font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-top:10px;padding:3px 10px;border-radius:6px;}
+  .feat-tag--purple{color:var(--purple);background:var(--purple-dim);border:1px solid var(--purple-border);}
+  .feat-tag--blue{color:var(--ok);background:rgba(77,184,255,.08);border:1px solid rgba(77,184,255,.2);}
+  .feat-tag--orange{color:var(--warn);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);}
+  .feat-stat{margin-top:12px;display:inline-flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:.7rem;color:var(--dim);}
+  .feat-stat strong{color:var(--accent);}
+
+  /* ── CTA ── */
+  .cta-wrap{background:var(--card);border:1px solid var(--purple-border);border-radius:18px;padding:40px 36px;position:relative;overflow:hidden;}
+  .cta-wrap::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(ellipse,rgba(167,139,250,.06),transparent 70%);pointer-events:none;}
+  .cta-inner{position:relative;z-index:1;}
+  .cta-wrap h2{font-size:1.5rem;font-weight:800;color:#fff;letter-spacing:-.5px;margin-bottom:8px;}
+  .cta-wrap p{font-size:.88rem;color:var(--text2);margin-bottom:28px;line-height:1.7;max-width:420px;}
+  .email-form{display:flex;gap:10px;max-width:440px;}
+  .email-form input{flex:1;padding:13px 16px;font-family:inherit;font-size:.88rem;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:#fff;outline:none;transition:.2s;}
   .email-form input:focus{border-color:var(--purple);}
   .email-form input::placeholder{color:var(--dim);}
-  .email-form button{padding:12px 24px;font-family:inherit;font-size:.88rem;font-weight:700;background:var(--purple);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap;}
-  .email-form button:hover{box-shadow:0 4px 16px rgba(167,139,250,.3);}
-  .note{font-size:.72rem;color:var(--dim);margin-top:10px;}
+  .email-form button{padding:13px 24px;font-family:inherit;font-size:.85rem;font-weight:700;background:var(--purple);color:#fff;border:none;border-radius:9px;cursor:pointer;transition:.2s;white-space:nowrap;}
+  .email-form button:hover{box-shadow:0 4px 20px rgba(167,139,250,.35);transform:translateY(-1px);}
+  .cta-note{font-size:.7rem;color:var(--dim);margin-top:10px;}
+  .cta-pricing{display:flex;align-items:center;gap:16px;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);}
+  .pricing-pill{font-family:'DM Mono',monospace;font-size:.75rem;padding:5px 14px;border-radius:8px;border:1px solid var(--border);color:var(--text2);}
+  .pricing-pill--highlight{border-color:var(--purple-border);color:var(--purple);background:var(--purple-dim);}
+  .pricing-sep{font-size:.7rem;color:var(--dim);}
 
-  .price-hint{margin-top:24px;font-family:'DM Mono',monospace;font-size:.8rem;color:var(--dim);}
-  .price-hint strong{color:var(--text2);}
-
-  .back{display:block;text-align:center;margin-top:48px;padding-bottom:48px;font-size:.82rem;color:var(--accent);font-weight:600;transition:.2s;}
+  /* ── BACK ── */
+  .back{display:block;text-align:center;margin-top:40px;padding-bottom:56px;font-size:.82rem;color:var(--accent);font-weight:600;transition:.2s;}
   .back:hover{text-decoration:underline;text-underline-offset:3px;}
 
-  @media(max-width:640px){h1{font-size:2rem;}.features{grid-template-columns:1fr;}.email-form{flex-direction:column;}}
+  @media(max-width:600px){
+    .hero h1{font-size:2.2rem;}
+    .hand-meta{flex-direction:column;}
+    .hand-pot{text-align:left;}
+    .email-form{flex-direction:column;}
+    .cta-pricing{flex-direction:column;align-items:flex-start;}
+    .mockup__footer{gap:8px;}
+  }
 </style>
 </head>
 <body>
 <div class="page">
+
+  <!-- NAV -->
   <nav class="nav anim d1">
     <a href="../" class="nav__brand">Pok<span>lytics</span></a>
+    <span class="nav__tool">HandIQ</span>
   </nav>
 
+  <!-- HERO -->
   <section class="hero">
+    <div class="hero__glow"></div>
     <div class="badge anim d1">Coming Q3 2026</div>
     <h1 class="anim d2">Your AI<br><em>poker coach.</em></h1>
-    <p class="sub anim d3">Deep hand-by-hand analysis. Spot your most costly mistakes, find patterns across thousands of hands, and get a personalized study plan.</p>
+    <p class="hero__sub anim d3">Deep hand-by-hand analysis. Spot your most costly mistakes, find patterns across thousands of hands, and get a personalized study plan built from your actual leaks.</p>
+    <div class="hero__meta anim d4 mono">
+      <span>$19.99 / month</span>
+      <span class="sep">·</span>
+      <span>Included in $49 Lifetime Deal</span>
+      <span class="sep">·</span>
+      <span style="color:var(--purple)">AI-powered</span>
+    </div>
   </section>
 
-  <div class="features anim d3">
-    <div class="feat">
-      <div class="feat__title">Hand-by-Hand Review</div>
-      <div class="feat__desc">Every decision scored against GTO. See exactly where you left money on the table.</div>
+  <!-- MOCKUP -->
+  <div class="mockup-wrap anim d4">
+    <div class="mockup">
+      <div class="mockup__scan"></div>
+
+      <div class="mockup__header">
+        <div class="mockup__dot-row">
+          <div class="mockup__dot"></div>
+          <div class="mockup__dot"></div>
+          <div class="mockup__dot"></div>
+        </div>
+        <div class="mockup__title-bar">handiq — session_2026-03-21.pkr</div>
+        <div class="mockup__badge-live">LIVE REVIEW</div>
+      </div>
+
+      <div class="mockup__body">
+        <div class="hand-meta">
+          <div class="hand-scenario">
+            <div class="hand-label">Hand #4,217</div>
+            <div class="hand-title">BTN vs BB — Preflop 3-Bet</div>
+            <div class="hand-cards">
+              <div class="card card--A card--heart">A♥</div>
+              <div class="card card--K card--spade">K♠</div>
+            </div>
+            <div class="hand-pos mono">Position: <span>BTN</span> &nbsp;·&nbsp; vs BB 3-bet to 9bb &nbsp;·&nbsp; 100bb deep</div>
+          </div>
+          <div class="hand-pot">
+            <div class="pot-label">Effective Stack</div>
+            <div class="pot-value">100bb</div>
+            <div class="pot-sub mono">pot: 9.5bb</div>
+          </div>
+        </div>
+
+        <div class="decision-label">Decision Analysis</div>
+        <div class="decisions">
+          <div class="decision-row decision-row--optimal">
+            <div class="decision-row__bar" style="width:100%"></div>
+            <div class="decision-action">4-Bet</div>
+            <div class="decision-ev-bar-wrap">
+              <div class="decision-ev-bar" style="--bar-w:100%;"></div>
+            </div>
+            <div class="decision-ev">+2.3bb <span class="decision-check">&#10003;</span></div>
+          </div>
+          <div class="decision-row decision-row--mid">
+            <div class="decision-row__bar" style="width:35%"></div>
+            <div class="decision-action">Call</div>
+            <div class="decision-ev-bar-wrap">
+              <div class="decision-ev-bar" style="--bar-w:35%;"></div>
+            </div>
+            <div class="decision-ev">+0.8bb</div>
+          </div>
+          <div class="decision-row decision-row--chosen">
+            <div class="decision-row__bar" style="width:4%"></div>
+            <div class="decision-action">Fold</div>
+            <div class="decision-ev-bar-wrap">
+              <div class="decision-ev-bar" style="--bar-w:0%;"></div>
+            </div>
+            <div class="decision-ev" style="opacity:.5">0bb</div>
+          </div>
+        </div>
+
+        <div class="verdict">
+          <div class="verdict__icon">&#9656;</div>
+          <div class="verdict__text">
+            <div class="verdict__line1">You <strong>folded</strong> AKs on BTN vs 3-bet. &nbsp;Optimal play: <strong style="color:var(--purple)">4-Bet to ~26bb</strong></div>
+            <div class="verdict__line2">EV loss: <strong>-2.3bb</strong> &nbsp;·&nbsp; <span>GTO 4-bet freq: 72% with AKs BTN</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup__footer">
+        <div class="mockup__footer-stat neg">
+          <span class="val">-18.4bb</span>
+          <span class="lbl">Session EV Lost</span>
+        </div>
+        <div class="mockup__footer-divider"></div>
+        <div class="mockup__footer-stat">
+          <span class="val">147</span>
+          <span class="lbl">Hands Reviewed</span>
+        </div>
+        <div class="mockup__footer-divider"></div>
+        <div class="mockup__footer-stat">
+          <span class="val" style="color:var(--warn)">23</span>
+          <span class="lbl">Leaks Found</span>
+        </div>
+        <div class="mockup__footer-divider"></div>
+        <div class="mockup__footer-stat pos">
+          <span class="val">+4.1bb</span>
+          <span class="lbl">vs Last Week</span>
+        </div>
+      </div>
     </div>
-    <div class="feat">
-      <div class="feat__title">Pattern Detection</div>
-      <div class="feat__desc">AI finds recurring mistakes across your database that you'd never spot manually.</div>
+    <div class="mockup__caption mono">Simulated preview — actual UI may differ</div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features-section anim d5">
+    <div class="features-heading">
+      <div class="features-heading__label">What HandIQ Does</div>
+      <div class="features-heading__title">Surgical analysis.<br>Not generic advice.</div>
+      <div class="features-heading__sub">Every insight is derived from your actual database — your spots, your stakes, your population.</div>
     </div>
-    <div class="feat">
-      <div class="feat__title">Study Plans</div>
-      <div class="feat__desc">Personalized weekly drills based on your actual leaks. Not generic advice.</div>
+
+    <div class="feat-list">
+      <div class="feat-item">
+        <div class="feat-num">01</div>
+        <div class="feat-body">
+          <div class="feat-title">Hand-by-Hand EV Scoring</div>
+          <div class="feat-desc">Every decision is evaluated against a solver baseline and assigned a precise EV delta. Not "you played this bad" — exactly how many big blinds you left on the table and in which spot.</div>
+          <div class="feat-tag feat-tag--purple">AI Solver Backed</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-num">02</div>
+        <div class="feat-body">
+          <div class="feat-title">Pattern Detection Across Your Database</div>
+          <div class="feat-desc">AI scans thousands of hands to surface recurring leak patterns — "3-bet pot fold equity missed BTN vs BB" or "overfolding river vs large bet in BvB." The patterns you'd never find manually.</div>
+          <div class="feat-stat">Typical user: <strong>3–7 core leaks</strong> found in first session</div>
+          <div class="feat-tag feat-tag--blue">Database Analysis</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-num">03</div>
+        <div class="feat-body">
+          <div class="feat-title">Personalized Weekly Study Plans</div>
+          <div class="feat-desc">Based on your leak profile, HandIQ generates a prioritized weekly drill list — not a generic GTO course. Spend 3 hours fixing spots worth 2bb/100, not spots worth 0.1bb/100.</div>
+          <div class="feat-tag feat-tag--purple">Adaptive Learning</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-num">04</div>
+        <div class="feat-body">
+          <div class="feat-title">Leak Progression Tracking</div>
+          <div class="feat-desc">Track which leaks you've patched and which are resurfacing. See your EV recovery over time — concrete evidence your study is working, week over week.</div>
+          <div class="feat-stat">Average improvement tracked: <strong>+1.8–3.2bb/100</strong> over 60 days</div>
+          <div class="feat-tag feat-tag--orange">Progress Metrics</div>
+        </div>
+      </div>
     </div>
-    <div class="feat">
-      <div class="feat__title">Progress Tracking</div>
-      <div class="feat__desc">Watch your stats improve over time. See which leaks you've fixed and which remain.</div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-wrap anim d6">
+    <div class="cta-inner">
+      <h2>Get early access.</h2>
+      <p>Be first to try HandIQ when it launches — or lock in a Lifetime Deal and get every Poklytics tool, forever.</p>
+      <form class="email-form" onsubmit="handleSubmit(event)">
+        <input type="email" placeholder="your@email.com" required>
+        <button type="submit">Notify Me</button>
+      </form>
+      <div class="cta-note">No spam. One email when HandIQ launches.</div>
+      <div class="cta-pricing">
+        <div class="pricing-pill">$19.99 / month standalone</div>
+        <div class="pricing-sep">or</div>
+        <div class="pricing-pill pricing-pill--highlight">$49 Lifetime Deal — all tools included</div>
+      </div>
     </div>
   </div>
 
-  <div class="cta-box anim d4">
-    <h2>Get early access.</h2>
-    <p>Be the first to try HandIQ when it launches. Or grab a Lifetime Deal and get it included.</p>
-    <form class="email-form" onsubmit="handleSubmit(event)">
-      <input type="email" placeholder="your@email.com" required>
-      <button type="submit">Notify Me</button>
-    </form>
-    <div class="note">No spam. Just a launch notification.</div>
-    <div class="price-hint">Expected pricing: <strong>$19.99/mo</strong> &mdash; included in <strong>$49 Lifetime Deal</strong></div>
-  </div>
-
-  <a href="../#pricing" class="back anim d4">&larr; Back to Poklytics &mdash; Get Lifetime Access</a>
+  <a href="../#pricing" class="back anim d6">&larr; Back to Poklytics &mdash; Get Lifetime Access</a>
 </div>
+
 <script>
-function handleSubmit(e){e.preventDefault();var i=e.target.querySelector('input');alert('Thanks! We\'ll notify you at: '+i.value);i.value='';}
+function handleSubmit(e){
+  e.preventDefault();
+  var i=e.target.querySelector('input');
+  var btn=e.target.querySelector('button');
+  btn.textContent='Done!';
+  btn.style.background='#4db8ff';
+  setTimeout(function(){btn.textContent='Notify Me';btn.style.background='';},2500);
+  i.value='';
+}
 </script>
 </body>
 </html>

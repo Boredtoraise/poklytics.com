@@ -6,3 +6,5 @@ node_modules/
 Thumbs.db
 *.md
 !README.md
+.wrangler/
+wrangler.toml
