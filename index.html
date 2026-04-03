@@ -603,27 +603,102 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <div class="footer__text">&copy; 2026 Poklytics &mdash; Built by a poker player, for poker players.</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#c8f135;margin-bottom:10px;">POKLYTICS</div>
+    <div class="footer__text">&copy; 2026 &nbsp;·&nbsp; <a href="#pricing" style="color:#c8f135;text-decoration:none;font-weight:700;">Lifetime Deal $49 →</a></div>
   </footer>
 
 </div>
 
+<style>
+#ltd-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(8,11,18,.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;}
+#ltd-modal.open{display:flex;}
+#ltd-box{background:#0f1220;border:1px solid #1a1e35;border-radius:16px;padding:40px 36px;max-width:420px;width:100%;font-family:inherit;position:relative;}
+#ltd-box h2{font-size:22px;font-weight:800;color:#e4e4ec;margin:0 0 6px;}
+#ltd-box p{font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.6;}
+#ltd-email{width:100%;background:#080b12;border:1px solid #1e2035;border-radius:8px;padding:13px 16px;color:#e4e4ec;font-size:14px;font-family:inherit;box-sizing:border-box;outline:none;margin-bottom:12px;}
+#ltd-email:focus{border-color:#c8f135;}
+#ltd-go{width:100%;background:#c8f135;color:#080b12;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;}
+#ltd-go:hover{opacity:.9;}#ltd-go:disabled{opacity:.6;cursor:not-allowed;}
+#ltd-err{color:#ff9500;font-size:13px;margin-top:8px;min-height:16px;}
+#ltd-close{position:absolute;top:16px;right:18px;background:none;border:none;color:#555a70;font-size:20px;cursor:pointer;line-height:1;}
+#ltd-note{font-size:11px;color:#2e3248;text-align:center;margin-top:12px;}
+</style>
+
+<!-- LTD Email Modal -->
+<div id="ltd-modal">
+  <div id="ltd-box">
+    <button id="ltd-close" onclick="closeLTD()">×</button>
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#c8f135;margin-bottom:16px;">LIFETIME DEAL · $49</div>
+    <h2>Get lifetime access →</h2>
+    <p>Unlimited reports + all 4 tools, forever.<br>Enter your email and we'll take you to checkout.</p>
+    <input id="ltd-email" type="email" placeholder="your@email.com" autocomplete="email"/>
+    <button id="ltd-go" onclick="submitLTD()">Continue to Checkout →</button>
+    <div id="ltd-err"></div>
+    <div id="ltd-note">14-day money-back guarantee · No subscriptions</div>
+  </div>
+</div>
+
 <script>
+var API_URL = 'https://leak.poklytics.com';
+
 function toggleFaq(el){el.parentElement.classList.toggle('open');}
 
 function handleEmail(e){
   e.preventDefault();
-  var input=document.getElementById('email-input');
-  // TODO: POST to /api/subscribe
-  alert('Thanks! We\'ll notify you at: '+input.value);
-  input.value='';
+  var input = document.getElementById('email-input');
+  var email = input.value.trim();
+  if (!email) return;
+  var btn = e.submitter || e.target.querySelector('button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  fetch(API_URL + '/api/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  }).then(function() {
+    input.value = '';
+    if (btn) { btn.disabled = false; btn.textContent = 'Notify Me'; }
+    var note = document.querySelector('.email-sect__note');
+    if (note) note.textContent = "You're on the list! Check spam / junk if you don't see our email.";
+  }).catch(function() {
+    if (btn) { btn.disabled = false; btn.textContent = 'Notify Me'; }
+  });
 }
 
 function handleLTD(){
-  // TODO: Stripe Checkout
-  alert('Stripe checkout coming soon! Leave your email below to be first in line.');
-  document.getElementById('email').scrollIntoView({behavior:'smooth'});
+  document.getElementById('ltd-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('ltd-email').focus(); }, 100);
 }
+
+function closeLTD(){
+  document.getElementById('ltd-modal').classList.remove('open');
+}
+
+function submitLTD(){
+  var email = document.getElementById('ltd-email').value.trim();
+  var err = document.getElementById('ltd-err');
+  var btn = document.getElementById('ltd-go');
+  if (!email || !email.includes('@')) { err.textContent = 'Please enter a valid email.'; return; }
+  btn.disabled = true; btn.textContent = 'Redirecting to checkout…'; err.textContent = '';
+  fetch(API_URL + '/api/create-checkout-ltd', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.error) throw new Error(d.error);
+    window.location.href = d.checkoutUrl;
+  })
+  .catch(function(e){
+    err.textContent = e.message || 'Something went wrong. Try again.';
+    btn.disabled = false; btn.textContent = 'Continue to Checkout →';
+  });
+}
+
+document.getElementById('ltd-modal').addEventListener('click', function(e){
+  if (e.target === this) closeLTD();
+});
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeLTD(); });
 </script>
 </body>
 </html>
