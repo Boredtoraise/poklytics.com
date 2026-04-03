@@ -764,7 +764,7 @@ function handleNotify(e, inputId) {
   const btn = e.target.querySelector('button');
   if (!email) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-  fetch(API_URL + '/api/subscribe', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email})})
+  fetch(API_URL + '/api/subscribe', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,source:'tournament-report'})})
   .then(function(){ if(btn){btn.textContent='✓ You\'re on the list!';btn.style.background='var(--ok)';} if(input)input.value='';var n=document.querySelector('.cta-note,.notify-note');if(n)n.textContent='Check spam / junk if you don\'t see our email.'; })
   .catch(function(){ if(btn){btn.textContent='Try again';btn.disabled=false;} });
 }

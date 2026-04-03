@@ -410,7 +410,7 @@ function handleSubmit(e){
   var email=i.value.trim();
   if(!email)return;
   btn.disabled=true;btn.textContent='Saving…';
-  fetch(API_URL+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
+  fetch(API_URL+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,source:'daily-spot'})})
   .then(function(){btn.textContent='✓ You\'re on the list!';btn.style.background='var(--ok)';i.value='';var n=document.querySelector('.note');if(n)n.textContent='Check spam / junk if you don\'t see our email.';})
   .catch(function(){btn.textContent='Try again';btn.disabled=false;});
 }
